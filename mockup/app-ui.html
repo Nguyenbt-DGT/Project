@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Moto Companion App — Interactive UI Mockup</title>
+<style>
+  /* ============ TOKENS (reused from index.html, + status palette) ============ */
+  :root{
+    --bg: #F4F6F4;
+    --surface: #FFFFFF;
+    --surface-2: #EAEEEA;
+    --border: #D7DFDA;
+    --border-strong: #BFC9C3;
+    --ink: #16211D;
+    --ink-muted: #4B5A54;
+    --ink-faint: #5C6B65;
+
+    --accent: #0D6E74;
+    --accent-strong: #085055;
+    --accent-soft: #E3F1F0;
+    --accent-ink: #FFFFFF;
+
+    --good: #3D7A53;
+    --good-soft: #E4F0E7;
+    --pending: #8F5416;
+    --pending-soft: #F7ECDC;
+
+    /* maintenance-status triad — distinct from --pending (which stays reserved
+       for "open business question" per index.html's convention) */
+    --status-ok: #3D7A53;
+    --status-ok-soft: #E4F0E7;
+    --status-warn: #A6650B;
+    --status-warn-soft: #F5E8D2;
+    --status-overdue: #B23A2E;
+    --status-overdue-soft: #F8E3DF;
+
+    --font-display: 'Bahnschrift', 'Segoe UI Semibold', 'Arial Narrow', sans-serif;
+    --font-body: 'Sitka Text', 'Sitka Small', Georgia, 'Times New Roman', serif;
+    --font-mono: 'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
+
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg: #101513;
+      --surface: #171E1B;
+      --surface-2: #1E2724;
+      --border: #2B3733;
+      --border-strong: #38453F;
+      --ink: #EAF0ED;
+      --ink-muted: #B3C0BB;
+      --ink-faint: #8C9B94;
+
+      --accent: #4FC7C2;
+      --accent-strong: #7FDAD5;
+      --accent-soft: rgba(79,199,194,0.14);
+      --accent-ink: #08201F;
+
+      --good: #7ED9A0;
+      --good-soft: rgba(126,217,160,0.14);
+      --pending: #E3A855;
+      --pending-soft: rgba(227,168,85,0.14);
+
+      --status-ok: #7ED9A0;
+      --status-ok-soft: rgba(126,217,160,0.14);
+      --status-warn: #F0B65F;
+      --status-warn-soft: rgba(240,182,95,0.16);
+      --status-overdue: #E2847A;
+      --status-overdue-soft: rgba(226,132,122,0.16);
+
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg: #101513; --surface: #171E1B; --surface-2: #1E2724; --border: #2B3733; --border-strong: #38453F;
+    --ink: #EAF0ED; --ink-muted: #B3C0BB; --ink-faint: #8C9B94;
+    --accent: #4FC7C2; --accent-strong: #7FDAD5; --accent-soft: rgba(79,199,194,0.14); --accent-ink: #08201F;
+    --good: #7ED9A0; --good-soft: rgba(126,217,160,0.14);
+    --pending: #E3A855; --pending-soft: rgba(227,168,85,0.14);
+    --status-ok: #7ED9A0; --status-ok-soft: rgba(126,217,160,0.14);
+    --status-warn: #F0B65F; --status-warn-soft: rgba(240,182,95,0.16);
+    --status-overdue: #E2847A; --status-overdue-soft: rgba(226,132,122,0.16);
+    color-scheme: dark;
+  }
+
+  /* ============ RESET ============ */
+  *,*::before,*::after{ box-sizing: border-box; }
+  body{
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  button{ font-family: inherit; }
+  input{ font-family: inherit; }
+  img,svg{ max-width: 100%; display:block; }
+  ul{ margin:0; padding:0; list-style:none; }
+  p{ margin:0; }
+  h1,h2,h3{ margin:0; text-wrap: balance; font-weight: 700; }
+  a{ color: var(--accent); }
+  a:focus-visible, button:focus-visible, input:focus-visible{
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  .tabular{ font-variant-numeric: tabular-nums; }
+  .eyebrow{
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .code-tag{
+    font-family: var(--font-mono);
+    font-size: 0.64rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  }
+
+  /* ============ PAGE CHROME (outside the device) ============ */
+  .page{
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+    padding: 36px 20px 56px;
+  }
+  .page-head{
+    max-width: 520px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .page-head h1{
+    font-family: var(--font-display);
+    font-size: clamp(1.3rem, 3vw, 1.7rem);
+    letter-spacing: -0.01em;
+  }
+  .page-head p{
+    color: var(--ink-muted);
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+  .status-legend{
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--ink-muted);
+  }
+  .status-legend .dot{ width: 9px; height: 9px; border-radius: 2px; display:inline-block; margin-right: 6px; vertical-align: middle; }
+
+  .page-footer{
+    max-width: 520px;
+    text-align: center;
+    color: var(--ink-faint);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+  }
+
+  /* ============ DEVICE FRAME ============ */
+  .phone-shell{
+    --frame-w: 390px;
+    --frame-h: 830px;
+    width: var(--frame-w);
+    height: var(--frame-h);
+    padding: 14px;
+    background: linear-gradient(160deg, #23302B, #0F1613);
+    border-radius: 52px;
+    box-shadow: 0 40px 70px -30px rgba(15,25,20,0.35), 0 2px 0 rgba(255,255,255,0.06) inset;
+    position: relative;
+  }
+  .phone-shell::before{ /* side button hints */
+    content: "";
+    position: absolute;
+    left: -3px; top: 120px;
+    width: 3px; height: 60px;
+    background: #0B100E;
+    border-radius: 2px 0 0 2px;
+  }
+  .phone-shell::after{
+    content: "";
+    position: absolute;
+    right: -3px; top: 96px;
+    width: 3px; height: 90px;
+    background: #0B100E;
+    border-radius: 0 2px 2px 0;
+  }
+  .phone-screen{
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: var(--bg);
+    border-radius: 38px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(0,0,0,0.4);
+  }
+  .notch{
+    position: absolute;
+    top: 10px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 26px;
+    background: #0B100E;
+    border-radius: 16px;
+    z-index: 50;
+  }
+  .statusbar{
+    flex: 0 0 auto;
+    height: 46px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 26px 8px;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--ink);
+    background: var(--bg);
+  }
+  .statusbar .sb-icons{ display:flex; align-items:center; gap: 5px; }
+  .statusbar .sb-icons svg{ width: 15px; height: 11px; }
+
+  /* ============ SCREEN STACK ============ */
+  .screen-stack{
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    background: var(--bg);
+  }
+  .app-screen{
+    display: none;
+    position: absolute;
+    inset: 0;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .app-screen.is-active{ display: flex; }
+  .screen-header{
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .back-btn{
+    flex: 0 0 auto;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .back-btn:hover{ border-color: var(--accent); color: var(--accent); }
+  .screen-header h2{
+    font-family: var(--font-display);
+    font-size: 1.12rem;
+    letter-spacing: -0.005em;
+    line-height: 1.2;
+  }
+  .screen-header .subtitle{
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+  .screen-body{
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 16px 18px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ============ TAB BAR ============ */
+  .tabbar{
+    flex: 0 0 auto;
+    display: flex;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    padding: 8px 6px calc(env(safe-area-inset-bottom, 0px) + 8px);
+  }
+  .tab-btn{
+    flex: 1 1 0;
+    background: none;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 6px 2px 4px;
+    cursor: pointer;
+    color: var(--ink-faint);
+    border-radius: 10px;
+  }
+  .tab-btn svg{ width: 21px; height: 21px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+  .tab-btn span{ font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.03em; text-transform: uppercase; }
+  .tab-btn.is-active{ color: var(--accent); }
+  .tab-btn.is-active svg{ stroke-width: 2.2; }
+  .tab-btn:hover{ background: var(--surface-2); }
+
+  /* ============ BUTTONS ============ */
+  .btn{
+    font-family: var(--font-display);
+    font-size: 0.92rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    padding: 12px 18px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+  }
+  .btn-primary{ background: var(--accent); color: var(--accent-ink); border-color: var(--accent-strong); }
+  .btn-primary:hover{ background: var(--accent-strong); }
+  .btn-primary:disabled{ opacity: 0.5; cursor: not-allowed; }
+  .btn-ghost{ background: var(--surface); color: var(--ink); border-color: var(--border-strong); }
+  .btn-ghost:hover{ border-color: var(--accent); color: var(--accent); }
+  .btn-outline-accent{ background: transparent; color: var(--accent); border-color: var(--accent); }
+  .btn-outline-accent:hover{ background: var(--accent-soft); }
+  .btn-sm{ padding: 8px 12px; font-size: 0.78rem; width: auto; }
+  .btn-danger-text{ background:none; border:none; color: var(--status-overdue); font-family: var(--font-mono); font-size: 0.75rem; text-decoration: underline; cursor: pointer; padding: 4px; }
+
+  /* ============ STATUS BADGE ============ */
+  .status-badge{
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 4px 8px;
+    border-radius: 5px;
+    white-space: nowrap;
+  }
+  .status-badge svg{ width: 11px; height: 11px; }
+  .status-badge.st-ok{ background: var(--status-ok-soft); color: var(--status-ok); }
+  .status-badge.st-warning{ background: var(--status-warn-soft); color: var(--status-warn); }
+  .status-badge.st-overdue{ background: var(--status-overdue-soft); color: var(--status-overdue); }
+
+  /* ============ SUMMARY STRIP ============ */
+  .summary-strip{ display: flex; gap: 8px; }
+  .summary-chip{
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 8px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .summary-chip .num{ font-family: var(--font-mono); font-size: 1.3rem; font-weight: 700; }
+  .summary-chip .lbl{ font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-faint); }
+  .summary-chip.sc-overdue .num{ color: var(--status-overdue); }
+  .summary-chip.sc-warning .num{ color: var(--status-warn); }
+  .summary-chip.sc-ok .num{ color: var(--status-ok); }
+
+  /* ============ METRIC CARD ============ */
+  .metric-card{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 14px 12px;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+  .metric-card:hover{ border-color: var(--border-strong); }
+  .metric-card-top{ display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .metric-card-name{ font-family: var(--font-display); font-size: 1rem; color: var(--ink); }
+  .metric-card-remaining{ font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-muted); }
+  .metric-card-remaining strong{ color: var(--ink); }
+
+  /* progress meter — dataviz mark spec: thin bar, rounded ends, 2px surface gap on cap */
+  .meter{
+    height: 8px;
+    border-radius: 4px;
+    background: var(--surface-2);
+    position: relative;
+    overflow: hidden;
+  }
+  .meter .meter-fill{
+    height: 100%;
+    border-radius: 4px;
+    min-width: 6px;
+  }
+  .meter.meter-overdue .meter-fill{ background: var(--status-overdue); }
+  .meter.meter-warning .meter-fill{ background: var(--status-warn); }
+  .meter.meter-ok .meter-fill{ background: var(--status-ok); }
+  .meter-caption{ display:flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.6rem; color: var(--ink-faint); }
+
+  .add-metric-btn{
+    border: 1.5px dashed var(--border-strong);
+    background: transparent;
+    color: var(--ink-muted);
+    border-radius: 12px;
+    padding: 14px;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    cursor: pointer;
+    width: 100%;
+  }
+  .add-metric-btn:hover{ border-color: var(--accent); color: var(--accent); }
+
+  /* ============ DETAIL SCREEN ============ */
+  .detail-hero{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .detail-hero .hero-figure{
+    font-family: var(--font-mono);
+    font-size: 2.1rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .detail-hero .hero-figure .unit{ font-size: 1rem; color: var(--ink-faint); font-weight: 500; margin-left: 4px; }
+  .kv-list{ background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .kv-row{ display: flex; justify-content: space-between; padding: 11px 14px; font-size: 0.86rem; }
+  .kv-row + .kv-row{ border-top: 1px solid var(--border); }
+  .kv-row .k{ color: var(--ink-muted); }
+  .kv-row .v{ font-family: var(--font-mono); font-weight: 600; }
+
+  /* ============ FORM ============ */
+  .field{ display: flex; flex-direction: column; gap: 6px; }
+  .field label{ font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-muted); }
+  .field input{
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    padding: 11px 12px;
+    font-size: 0.95rem;
+    color: var(--ink);
+  }
+  .field input:focus{ border-color: var(--accent); outline: none; }
+  .field .hint{ font-size: 0.74rem; color: var(--ink-faint); }
+  .field.has-error input{ border-color: var(--status-overdue); }
+  .field .error-msg{ font-size: 0.76rem; color: var(--status-overdue); display: none; }
+  .field.has-error .error-msg{ display: block; }
+  .field-row{ display: flex; gap: 8px; align-items: center; }
+  .mini-link-btn{ background: none; border: none; color: var(--accent); font-family: var(--font-mono); font-size: 0.7rem; cursor: pointer; white-space: nowrap; padding: 4px 0; }
+  .mini-link-btn:hover{ text-decoration: underline; }
+  .form-error-banner{
+    display: none;
+    background: var(--status-overdue-soft);
+    color: var(--status-overdue);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.8rem;
+  }
+  .form-error-banner.is-visible{ display: block; }
+
+  /* ============ EMPTY STATE ============ */
+  .empty-state{
+    margin: auto;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 30px 10px;
+    color: var(--ink-muted);
+  }
+  .empty-state svg{ width: 44px; height: 44px; stroke: var(--ink-faint); }
+  .empty-state h3{ font-family: var(--font-display); font-size: 1.05rem; color: var(--ink); }
+  .empty-state p{ font-size: 0.86rem; max-width: 26ch; }
+
+  /* ============ TOURING PLAN FORM ============ */
+  .vehicle-pill{
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px;
+  }
+  .vehicle-pill .avatar{
+    width: 38px; height: 38px; border-radius: 9px; background: var(--accent-soft); color: var(--accent-strong);
+    display: flex; align-items: center; justify-content: center; flex: 0 0 auto;
+  }
+  .vehicle-pill .avatar svg{ width: 20px; height: 20px; }
+  .vehicle-pill .name{ font-family: var(--font-display); font-size: 0.95rem; }
+  .vehicle-pill .meta{ font-family: var(--font-mono); font-size: 0.68rem; color: var(--ink-faint); }
+
+  /* ============ MODAL ============ */
+  .modal-overlay{
+    position: absolute; inset: 0;
+    background: rgba(10,16,13,0.5);
+    display: none;
+    align-items: flex-end;
+    z-index: 80;
+  }
+  .modal-overlay.is-visible{ display: flex; }
+  .modal-card{
+    width: 100%;
+    max-height: 92%;
+    overflow-y: auto;
+    background: var(--surface);
+    border-radius: 20px 20px 0 0;
+    padding: 22px 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 -12px 30px rgba(0,0,0,0.18);
+  }
+  .modal-card .modal-icon{
+    width: 42px; height: 42px; border-radius: 12px;
+    background: var(--status-overdue-soft); color: var(--status-overdue);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-card .modal-icon svg{ width: 22px; height: 22px; }
+  .modal-card h3{ font-family: var(--font-display); font-size: 1.1rem; }
+  .modal-card .modal-lede{ font-size: 0.86rem; color: var(--ink-muted); }
+  .modal-list{ display: flex; flex-direction: column; gap: 8px; }
+  .modal-list-item{
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--status-overdue-soft); border-radius: 8px; padding: 9px 12px;
+  }
+  .modal-list-item .m-name{ font-size: 0.86rem; font-weight: 600; }
+  .modal-list-item .m-over{ font-family: var(--font-mono); font-size: 0.74rem; color: var(--status-overdue); font-weight: 700; }
+  .modal-actions{ display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+
+  /* ============ PENDING TAG (reused verbatim from index.html) ============ */
+  .pending-tag{
+    display:inline-flex; align-items:flex-start; gap: 6px;
+    font-size: 0.74rem;
+    color: var(--pending);
+    background: var(--pending-soft);
+    border-radius: 4px;
+    padding: 6px 9px;
+    line-height: 1.35;
+  }
+  .pending-tag::before{ content: "?"; font-weight: 700; flex: 0 0 auto; }
+
+  /* ============ MAP SCREEN ============ */
+  .map-canvas-wrap{
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    background: var(--surface-2);
+  }
+  .map-canvas-wrap svg{ width: 100%; height: 100%; display: block; }
+  #route-dot{ offset-distance: 0%; }
+  .map-overlay-top{
+    position: absolute; top: 12px; left: 12px; right: 12px;
+    display: flex; justify-content: space-between; gap: 8px;
+  }
+  .map-plan-chip{
+    background: rgba(23,30,27,0.82); color: #fff;
+    font-family: var(--font-mono); font-size: 0.68rem;
+    padding: 6px 10px; border-radius: 20px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .map-plan-chip .rec-dot{ width: 7px; height: 7px; border-radius: 50%; background: #E2847A; }
+  .map-stat-card{
+    position: absolute; left: 12px; right: 12px; bottom: 14px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 12px;
+    box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+  }
+  .map-stat-row{ display: flex; justify-content: space-between; }
+  .map-stat{ display: flex; flex-direction: column; gap: 2px; }
+  .map-stat .val{ font-family: var(--font-mono); font-size: 1.15rem; font-weight: 700; }
+  .map-stat .lbl{ font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-faint); }
+  .map-progress-hint{ font-family: var(--font-mono); font-size: 0.7rem; color: var(--ink-muted); text-align: center; }
+
+  .idle-map-cta{
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(244,246,244,0.9);
+    flex-direction: column; gap: 14px; padding: 24px; text-align: center;
+  }
+  :root[data-theme="dark"] .idle-map-cta{ background: rgba(16,21,19,0.88); }
+  @media (prefers-color-scheme: dark){ .idle-map-cta{ background: rgba(16,21,19,0.88); } }
+  .idle-map-cta svg{ width: 40px; height: 40px; stroke: var(--ink-faint); }
+  .idle-map-cta h3{ font-family: var(--font-display); font-size: 1.05rem; }
+  .idle-map-cta p{ font-size: 0.84rem; color: var(--ink-muted); max-width: 24ch; }
+
+  /* ============ TRIP SUMMARY ============ */
+  .trip-recap{
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px; display: flex; gap: 14px;
+  }
+  .trip-recap .recap-figure{ text-align:center; flex:1; }
+  .trip-recap .recap-figure .val{ font-family: var(--font-mono); font-size: 1.3rem; font-weight: 700; }
+  .trip-recap .recap-figure .lbl{ font-family: var(--font-mono); font-size: 0.6rem; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em; }
+  .confirm-card{
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px; display: flex; flex-direction: column; gap: 12px;
+  }
+  .confirm-card p{ font-size: 0.92rem; line-height: 1.45; }
+  .confirm-actions{ display: flex; gap: 8px; }
+  .confirm-actions .btn{ flex: 1; }
+  .result-callout{
+    display: none;
+    border-radius: 10px; padding: 12px 14px; font-size: 0.86rem; line-height: 1.4;
+  }
+  .result-callout.is-visible{ display: block; }
+  .result-callout.rc-flip{ background: var(--status-overdue-soft); color: var(--status-overdue); }
+  .result-callout.rc-neutral{ background: var(--surface-2); color: var(--ink-muted); }
+
+  @media (max-width: 430px){
+    .phone-shell{ --frame-w: 100vw; --frame-h: 100dvh; border-radius: 0; padding: 0; }
+    .phone-screen{ border-radius: 0; }
+    .notch{ display:none; }
+    .page{ padding: 0; }
+    .page-head, .status-legend, .page-footer{ display:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header class="page-head">
+    <span class="eyebrow">Interactive UI mockup — tap through it</span>
+    <h1>Moto Companion App</h1>
+    <p>One device frame, eight screens, real state. Dashboard → New Touring Plan → Map Tracking → Trip Summary → back to Dashboard — the loop that proves HEALTH_CHECK, TOURING_PLAN and MAP_TRACKING are one product.</p>
+  </header>
+  <div class="status-legend">
+    <span><span class="dot" style="background:var(--status-ok)"></span>OK</span>
+    <span><span class="dot" style="background:var(--status-warn)"></span>Warning — within threshold</span>
+    <span><span class="dot" style="background:var(--status-overdue)"></span>Overdue</span>
+  </div>
+
+  <div class="phone-shell">
+    <div class="phone-screen">
+      <div class="notch"></div>
+
+      <div class="statusbar">
+        <span id="clock">9:41</span>
+        <span class="sb-icons" aria-hidden="true">
+          <svg viewBox="0 0 16 11"><path d="M1 9h1v2H1zM4 6h1v5H4zM7 4h1v7H7zM10 2h1v9h-1zM13 0h1v11h-1z" fill="currentColor" stroke="none"/></svg>
+          <svg viewBox="0 0 22 11"><rect x="0.5" y="0.5" width="19" height="10" rx="2.5" fill="none" stroke="currentColor"/><rect x="2" y="2" width="15" height="7" rx="1.2" fill="currentColor"/><rect x="20.2" y="3.5" width="1.5" height="4" rx="0.7" fill="currentColor"/></svg>
+        </span>
+      </div>
+
+      <main class="screen-stack" id="screen-stack">
+
+        <!-- 1. DASHBOARD -->
+        <section class="app-screen" data-screen="dashboard" aria-labelledby="dash-vehicle-name">
+          <div class="screen-header">
+            <div>
+              <div class="subtitle">HEALTH_CHECK · your bike</div>
+              <h2 id="dash-vehicle-name">Versys 650</h2>
+            </div>
+          </div>
+          <div class="screen-body">
+            <div class="summary-strip" id="dash-summary-strip"></div>
+            <div id="dash-metric-list" style="display:flex; flex-direction:column; gap:12px;"></div>
+            <button class="add-metric-btn" id="btn-add-metric" type="button">+ Add a metric to track</button>
+          </div>
+        </section>
+
+        <!-- 2. VEHICLE HEALTH DETAIL -->
+        <section class="app-screen" data-screen="detail" aria-labelledby="detail-name">
+          <div class="screen-header">
+            <button class="back-btn" data-nav="dashboard" aria-label="Back to dashboard">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2 4 8l6 6"/></svg>
+            </button>
+            <div>
+              <div class="subtitle">Metric detail</div>
+              <h2 id="detail-name">Engine Oil</h2>
+            </div>
+          </div>
+          <div class="screen-body">
+            <div class="detail-hero">
+              <span id="detail-badge"></span>
+              <div class="hero-figure" id="detail-figure">400<span class="unit">km left</span></div>
+              <div class="meter" id="detail-meter"><div class="meter-fill" id="detail-meter-fill" style="width:0%"></div></div>
+            </div>
+            <div class="kv-list">
+              <div class="kv-row"><span class="k">Service interval</span><span class="v tabular" id="detail-interval">—</span></div>
+              <div class="kv-row"><span class="k">Warning threshold</span><span class="v tabular" id="detail-threshold">—</span></div>
+              <div class="kv-row"><span class="k">Last service (baseline)</span><span class="v tabular" id="detail-baseline">—</span></div>
+              <div class="kv-row"><span class="k">Current reading</span><span class="v tabular" id="detail-current">—</span></div>
+            </div>
+            <button class="btn btn-primary" id="btn-edit-metric" type="button">Edit metric</button>
+          </div>
+        </section>
+
+        <!-- 3. ADD/EDIT METRIC (merged form) -->
+        <section class="app-screen" data-screen="edit" aria-labelledby="edit-title">
+          <div class="screen-header">
+            <button class="back-btn" id="edit-back-btn" aria-label="Back">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2 4 8l6 6"/></svg>
+            </button>
+            <div>
+              <div class="subtitle" id="edit-mode-label">Edit metric</div>
+              <h2 id="edit-title">Brake Pads (Front)</h2>
+            </div>
+          </div>
+          <div class="screen-body">
+            <div class="form-error-banner" id="edit-error-banner">Warning threshold must be smaller than the service interval.</div>
+            <div class="field" id="field-name">
+              <label for="f-name">Metric name</label>
+              <input id="f-name" type="text" placeholder="e.g. Air Filter" autocomplete="off" />
+              <span class="error-msg">Name is required.</span>
+            </div>
+            <div class="field" id="field-interval">
+              <label for="f-interval">Service interval (km)</label>
+              <input id="f-interval" type="number" min="1" step="1" placeholder="e.g. 5000" />
+              <span class="error-msg">Enter a positive whole number of km.</span>
+            </div>
+            <div class="field" id="field-threshold">
+              <label for="f-threshold">Warning threshold (km before due)</label>
+              <input id="f-threshold" type="number" min="1" step="1" placeholder="e.g. 500" />
+              <span class="hint">Must be less than the service interval.</span>
+              <span class="error-msg">Enter a positive whole number, smaller than the interval.</span>
+            </div>
+            <div class="field" id="field-baseline">
+              <div class="field-row" style="justify-content: space-between;">
+                <label for="f-baseline" style="margin:0;">Last service (baseline, km) — optional</label>
+              </div>
+              <input id="f-baseline" type="number" min="0" step="1" placeholder="defaults to current odometer" />
+              <div class="field-row">
+                <span class="hint">Leave blank to default to the vehicle's current odometer.</span>
+                <button class="mini-link-btn" id="btn-reset-baseline" type="button">Reset to current ↻</button>
+              </div>
+            </div>
+            <button class="btn btn-primary" id="btn-save-metric" type="button">Save metric</button>
+          </div>
+        </section>
+
+        <!-- 4. TOURING PLAN LIST -->
+        <section class="app-screen" data-screen="touring" aria-labelledby="touring-title">
+          <div class="screen-header">
+            <div>
+              <div class="subtitle">TOURING_PLAN</div>
+              <h2 id="touring-title">Touring Plans</h2>
+            </div>
+          </div>
+          <div class="screen-body">
+            <div class="empty-state">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6"><path d="M3 18l6-13 4 8 3-5 5 10H3z"/><circle cx="9" cy="6" r="1.4" fill="none"/></svg>
+              <h3>No touring plans yet</h3>
+              <p>Start one and Moto Companion will check your bike's health before you roll out.</p>
+            </div>
+            <button class="btn btn-primary" id="btn-new-plan" type="button">+ New touring plan</button>
+          </div>
+        </section>
+
+        <!-- 5. NEW TOURING PLAN -->
+        <section class="app-screen" data-screen="newplan" aria-labelledby="newplan-title">
+          <div class="screen-header">
+            <button class="back-btn" data-nav="touring" aria-label="Back to touring plans">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2 4 8l6 6"/></svg>
+            </button>
+            <div>
+              <div class="subtitle">New plan</div>
+              <h2 id="newplan-title">Plan a tour</h2>
+            </div>
+          </div>
+          <div class="screen-body">
+            <div class="field">
+              <label for="f-plan-name">Plan name</label>
+              <input id="f-plan-name" type="text" value="Coastal Loop Weekender" />
+            </div>
+            <div class="field">
+              <label for="f-plan-date">Departure date</label>
+              <input id="f-plan-date" type="text" value="Sat, 18 Jul" />
+            </div>
+            <div class="field">
+              <label>Vehicle</label>
+              <div class="vehicle-pill">
+                <span class="avatar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17l4-8h4l4 8M10 9H8"/></svg></span>
+                <div>
+                  <div class="name" id="plan-vehicle-name">Versys 650</div>
+                  <div class="meta">Only vehicle on this account</div>
+                </div>
+              </div>
+            </div>
+            <p style="font-size:0.8rem; color:var(--ink-muted);">Before you depart, Moto Companion re-checks Versys 650's maintenance status against every tracked metric.</p>
+            <button class="btn btn-primary" id="btn-start-plan" type="button">Check vehicle &amp; start plan</button>
+          </div>
+
+          <div class="modal-overlay" id="predeparture-modal">
+            <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-lede">
+              <span class="modal-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 2 21h20L12 3z"/><path d="M12 10v5"/><circle cx="12" cy="18" r="0.6" fill="currentColor" stroke="none"/></svg></span>
+              <h3 id="modal-title">Your bike needs attention first</h3>
+              <p class="modal-lede" id="modal-lede">These metrics are overdue for service, worst first — riding before fixing them adds risk.</p>
+              <div class="modal-list" id="modal-overdue-list"></div>
+              <div class="modal-actions">
+                <button class="btn btn-primary" id="btn-modal-health" type="button">Go to Health Check</button>
+                <button class="btn btn-ghost" id="btn-modal-proceed" type="button">Proceed anyway</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. MAP TRACKING – LIVE (simulated) -->
+        <section class="app-screen" data-screen="map" aria-labelledby="map-plan-title">
+          <div class="screen-header">
+            <div>
+              <div class="subtitle">MAP_TRACKING · simulated</div>
+              <h2 id="map-plan-title">Coastal Loop Weekender</h2>
+            </div>
+          </div>
+          <div class="map-canvas-wrap" id="map-canvas-wrap">
+            <svg viewBox="0 0 320 560" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <defs>
+                <linearGradient id="terrainGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="var(--surface-2)"/>
+                  <stop offset="1" stop-color="var(--bg)"/>
+                </linearGradient>
+              </defs>
+              <rect x="0" y="0" width="320" height="560" fill="url(#terrainGrad)"/>
+              <path d="M-20 120 Q 60 90 120 150 T 340 130" stroke="var(--border-strong)" stroke-width="10" fill="none" opacity="0.5"/>
+              <path d="M-20 340 Q 100 300 160 370 T 340 360" stroke="var(--border-strong)" stroke-width="14" fill="none" opacity="0.35"/>
+              <circle cx="250" cy="90" r="26" fill="var(--border)" opacity="0.5"/>
+              <circle cx="60" cy="440" r="34" fill="var(--border)" opacity="0.4"/>
+              <circle cx="270" cy="480" r="18" fill="var(--border)" opacity="0.45"/>
+              <path id="route-path-bg" d="M50,500 C95,440 55,360 115,320 S 210,270 195,190 S 150,90 255,55" stroke="var(--border-strong)" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.4"/>
+              <path id="route-path" d="M50,500 C95,440 55,360 115,320 S 210,270 195,190 S 150,90 255,55" stroke="var(--accent)" stroke-width="5" fill="none" stroke-linecap="round"/>
+              <circle cx="50" cy="500" r="6" fill="var(--accent-strong)" stroke="var(--surface)" stroke-width="2"/>
+              <circle id="route-dot" cx="0" cy="0" r="7" fill="var(--accent)" stroke="var(--surface)" stroke-width="2.5"/>
+              <circle id="route-end-marker" cx="255" cy="55" r="6" fill="var(--status-overdue)" stroke="var(--surface)" stroke-width="2" opacity="0"/>
+            </svg>
+            <div class="map-overlay-top">
+              <span class="map-plan-chip"><span class="rec-dot"></span> Recording</span>
+              <span class="map-plan-chip" id="map-vehicle-chip">Versys 650</span>
+            </div>
+            <div class="map-stat-card">
+              <div class="map-stat-row">
+                <div class="map-stat"><span class="val tabular" id="map-distance">0.0 km</span><span class="lbl">Distance</span></div>
+                <div class="map-stat"><span class="val tabular" id="map-time">0:00:00</span><span class="lbl">Elapsed</span></div>
+                <div class="map-stat"><span class="val tabular" id="map-speed">0 km/h</span><span class="lbl">Avg speed</span></div>
+              </div>
+              <div class="map-progress-hint" id="map-progress-hint">Recording your route…</div>
+              <button class="btn btn-primary" id="btn-end-trip" type="button" disabled>End trip</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7. TRIP SUMMARY -->
+        <section class="app-screen" data-screen="summary" aria-labelledby="summary-title">
+          <div class="screen-header">
+            <div>
+              <div class="subtitle">Trip complete</div>
+              <h2 id="summary-title">Trip Summary</h2>
+            </div>
+          </div>
+          <div class="screen-body">
+            <div class="trip-recap">
+              <div class="recap-figure"><div class="val tabular" id="summary-distance">450.0 km</div><div class="lbl">Distance</div></div>
+              <div class="recap-figure"><div class="val tabular" id="summary-time">5:10:00</div><div class="lbl">Duration</div></div>
+              <div class="recap-figure"><div class="val tabular" id="summary-speed">87 km/h</div><div class="lbl">Avg speed</div></div>
+            </div>
+
+            <div class="confirm-card" id="summary-confirm-card">
+              <p id="summary-confirm-text">Trip recorded: <strong>450.0 km</strong>. Add to Versys 650's total distance?</p>
+              <div class="confirm-actions">
+                <button class="btn btn-primary" id="btn-add-total" type="button">Add to total</button>
+                <button class="btn btn-ghost" id="btn-skip-total" type="button">Skip</button>
+              </div>
+              <span class="pending-tag">Mechanism pending decision — KB §4.2 doesn't confirm whether trip distance should sync automatically or need this manual confirm step.</span>
+            </div>
+
+            <div class="result-callout" id="summary-result"></div>
+
+            <button class="btn btn-primary" id="btn-summary-done" type="button" style="display:none;">Back to dashboard</button>
+          </div>
+        </section>
+
+      </main>
+
+      <!-- 8. PERSISTENT BOTTOM TAB BAR -->
+      <nav class="tabbar" aria-label="Primary">
+        <button class="tab-btn" data-tab="dashboard" data-nav="dashboard" type="button">
+          <svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg>
+          <span>Dashboard</span>
+        </button>
+        <button class="tab-btn" data-tab="touring" data-nav="touring" type="button">
+          <svg viewBox="0 0 24 24"><path d="M3 19l6-13 4 8 3-5 5 10"/></svg>
+          <span>Touring</span>
+        </button>
+        <button class="tab-btn" data-tab="map" data-nav="mapTab" type="button">
+          <svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>
+          <span>Map</span>
+        </button>
+      </nav>
+
+    </div>
+  </div>
+
+  <footer class="page-footer">Prepared by the Moto Companion App squad — Designer · interactive mockup, in-memory state, no backend. Not final visual branding.</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============================================================
+     STATE — seeded per BA spec (reconciled data model: one shared
+     vehicle.currentOdometer read by every metric, no per-metric
+     "current" field — remaining/status/progress are all derived).
+  ============================================================ */
+  var state = {
+    vehicle: { name: "Versys 650", currentOdometer: 26500 },
+    metrics: [
+      { id:"oil",   name:"Engine Oil",            interval:5000,  warningThreshold:500,  lastService:21900 },
+      { id:"brake", name:"Brake Pads (Front)",     interval:20000, warningThreshold:2000, lastService:5000  },
+      { id:"chain", name:"Chain & Sprocket",       interval:15000, warningThreshold:1000, lastService:18500 }
+    ],
+    trip: { distance:0, elapsedSec:0, running:false, done:false, hasStarted:false, applied:null },
+    ui: { detailMetricId:null, editingMetricId:null, editReturnTo:"dashboard" }
+  };
+
+  var TRIP_DISTANCE_KM = 450.0;      // see report: literal "42.3 km" example text can't
+  var TRIP_ELAPSED_SEC = 5*3600+10*60; // produce the required overdue-by-50 math, so the
+  var TRIP_ANIM_MS = 7500;             // simulated ride uses 450.0 km, matching the BA's math.
+
+  /* ============================================================
+     BUSINESS LOGIC — HEALTH_CHECK status formula (BA spec, verbatim)
+  ============================================================ */
+  function computeMetric(m){
+    var odo = state.vehicle.currentOdometer;
+    var remaining = (m.lastService + m.interval) - odo;
+    var status = remaining <= 0 ? "overdue" : (remaining <= m.warningThreshold ? "warning" : "ok");
+    var progress = clamp((odo - m.lastService) / m.interval, 0, 1);
+    return { remaining: remaining, status: status, progress: progress };
+  }
+  function clamp(n,a,b){ return Math.max(a, Math.min(b, n)); }
+  function fmt(n){ return Math.round(n).toLocaleString("en-US"); }
+
+  var ICONS = {
+    ok: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8.5l3 3 7-7"/></svg>',
+    warning: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 1 1 14h14L8 1z"/><path d="M8 6v4"/><circle cx="8" cy="11.6" r="0.5" fill="currentColor" stroke="none"/></svg>',
+    overdue: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6.5"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5"/></svg>'
+  };
+  var STATUS_LABEL = { ok:"OK", warning:"WARNING", overdue:"OVERDUE" };
+
+  function badgeHTML(status){
+    return '<span class="status-badge st-'+status+'">'+ICONS[status]+STATUS_LABEL[status]+'</span>';
+  }
+  function meterClass(status){ return status==="overdue"?"meter-overdue":status==="warning"?"meter-warning":"meter-ok"; }
+
+  /* ============================================================
+     NAVIGATION
+  ============================================================ */
+  var screens = Array.prototype.slice.call(document.querySelectorAll(".app-screen"));
+  var tabButtons = Array.prototype.slice.call(document.querySelectorAll(".tab-btn"));
+  var TAB_FOR_SCREEN = { dashboard:"dashboard", detail:"dashboard", edit:"dashboard",
+                          touring:"touring", newplan:"touring",
+                          map:"map", summary:"map" };
+
+  function show(screenId){
+    screens.forEach(function(s){ s.classList.toggle("is-active", s.dataset.screen === screenId); });
+    var tab = TAB_FOR_SCREEN[screenId] || null;
+    tabButtons.forEach(function(b){
+      var active = b.dataset.tab === tab;
+      b.classList.toggle("is-active", active);
+      if(active){ b.setAttribute("aria-current", "page"); } else { b.removeAttribute("aria-current"); }
+    });
+    document.getElementById("screen-stack").scrollTop = 0;
+    var body = document.querySelector('.app-screen[data-screen="'+screenId+'"] .screen-body');
+    if(body) body.scrollTop = 0;
+  }
+
+  /* ============================================================
+     RENDER — DASHBOARD
+  ============================================================ */
+  function renderDashboard(){
+    document.getElementById("dash-vehicle-name").textContent = state.vehicle.name;
+    var counts = { ok:0, warning:0, overdue:0 };
+    var list = document.getElementById("dash-metric-list");
+    list.innerHTML = "";
+    state.metrics.forEach(function(m){
+      var c = computeMetric(m);
+      counts[c.status]++;
+      var card = document.createElement("button");
+      card.type = "button";
+      card.className = "metric-card";
+      card.dataset.metricId = m.id;
+      var remainingLabel = c.remaining <= 0
+        ? ("Overdue by " + fmt(Math.abs(c.remaining)) + " km")
+        : (fmt(c.remaining) + " km remaining");
+      card.innerHTML =
+        '<div class="metric-card-top">' +
+          '<span class="metric-card-name">'+m.name+'</span>' +
+          badgeHTML(c.status) +
+        '</div>' +
+        '<div class="meter '+meterClass(c.status)+'"><div class="meter-fill" style="width:'+(c.progress*100).toFixed(0)+'%"></div></div>' +
+        '<div class="metric-card-remaining"><strong class="tabular">'+remainingLabel+'</strong> · due at '+fmt(m.lastService+m.interval)+' km</div>';
+      card.addEventListener("click", function(){ openDetail(m.id); });
+      list.appendChild(card);
+    });
+    var strip = document.getElementById("dash-summary-strip");
+    strip.innerHTML =
+      '<div class="summary-chip sc-overdue"><span class="num tabular">'+counts.overdue+'</span><span class="lbl">Overdue</span></div>' +
+      '<div class="summary-chip sc-warning"><span class="num tabular">'+counts.warning+'</span><span class="lbl">Warning</span></div>' +
+      '<div class="summary-chip sc-ok"><span class="num tabular">'+counts.ok+'</span><span class="lbl">OK</span></div>';
+  }
+
+  /* ============================================================
+     RENDER — DETAIL
+  ============================================================ */
+  function openDetail(metricId){
+    state.ui.detailMetricId = metricId;
+    renderDetail();
+    show("detail");
+  }
+  function getMetric(id){ return state.metrics.filter(function(m){ return m.id === id; })[0]; }
+  function renderDetail(){
+    var m = getMetric(state.ui.detailMetricId);
+    if(!m) return;
+    var c = computeMetric(m);
+    document.getElementById("detail-name").textContent = m.name;
+    document.getElementById("detail-badge").innerHTML = badgeHTML(c.status);
+    document.getElementById("detail-figure").innerHTML = c.remaining <= 0
+      ? (fmt(Math.abs(c.remaining)) + '<span class="unit">km overdue</span>')
+      : (fmt(c.remaining) + '<span class="unit">km left</span>');
+    var meter = document.getElementById("detail-meter");
+    meter.className = "meter " + meterClass(c.status);
+    document.getElementById("detail-meter-fill").style.width = (c.progress*100).toFixed(0)+"%";
+    document.getElementById("detail-interval").textContent = fmt(m.interval) + " km";
+    document.getElementById("detail-threshold").textContent = fmt(m.warningThreshold) + " km";
+    document.getElementById("detail-baseline").textContent = fmt(m.lastService) + " km";
+    document.getElementById("detail-current").textContent = fmt(state.vehicle.currentOdometer) + " km";
+  }
+
+  /* ============================================================
+     ADD / EDIT METRIC FORM
+  ============================================================ */
+  var editEls = {
+    name: document.getElementById("f-name"),
+    interval: document.getElementById("f-interval"),
+    threshold: document.getElementById("f-threshold"),
+    baseline: document.getElementById("f-baseline")
+  };
+  function openEdit(metricId){
+    state.ui.editingMetricId = metricId;
+    state.ui.editReturnTo = metricId ? "detail" : "dashboard";
+    clearFieldErrors();
+    if(metricId){
+      var m = getMetric(metricId);
+      document.getElementById("edit-mode-label").textContent = "Edit metric";
+      document.getElementById("edit-title").textContent = m.name;
+      editEls.name.value = m.name;
+      editEls.interval.value = m.interval;
+      editEls.threshold.value = m.warningThreshold;
+      editEls.baseline.value = m.lastService;
+    } else {
+      document.getElementById("edit-mode-label").textContent = "New metric";
+      document.getElementById("edit-title").textContent = "Add a metric";
+      editEls.name.value = "";
+      editEls.interval.value = "";
+      editEls.threshold.value = "";
+      editEls.baseline.value = "";
+    }
+    show("edit");
+  }
+  document.getElementById("btn-add-metric").addEventListener("click", function(){ openEdit(null); });
+  document.getElementById("btn-edit-metric").addEventListener("click", function(){ openEdit(state.ui.detailMetricId); });
+  document.getElementById("edit-back-btn").addEventListener("click", function(){
+    show(state.ui.editReturnTo === "detail" ? "detail" : "dashboard");
+  });
+  document.getElementById("btn-reset-baseline").addEventListener("click", function(){
+    // Odometer is a single shared vehicle-level field now, so "reset to
+    // current" always means the vehicle's current odometer — same source
+    // for both editing an existing metric and defaulting a new one.
+    editEls.baseline.value = state.vehicle.currentOdometer;
+  });
+
+  function clearFieldErrors(){
+    ["field-name","field-interval","field-threshold"].forEach(function(id){
+      document.getElementById(id).classList.remove("has-error");
+    });
+    document.getElementById("edit-error-banner").classList.remove("is-visible");
+  }
+
+  document.getElementById("btn-save-metric").addEventListener("click", function(){
+    clearFieldErrors();
+    var name = editEls.name.value.trim();
+    var interval = parseInt(editEls.interval.value, 10);
+    var threshold = parseInt(editEls.threshold.value, 10);
+    var baselineRaw = editEls.baseline.value.trim();
+
+    var valid = true;
+    if(!name){ document.getElementById("field-name").classList.add("has-error"); valid = false; }
+    if(!Number.isInteger(interval) || interval <= 0){ document.getElementById("field-interval").classList.add("has-error"); valid = false; }
+    if(!Number.isInteger(threshold) || threshold <= 0){ document.getElementById("field-threshold").classList.add("has-error"); valid = false; }
+    if(valid && threshold >= interval){
+      document.getElementById("field-threshold").classList.add("has-error");
+      document.getElementById("edit-error-banner").classList.add("is-visible");
+      valid = false;
+    }
+    if(!valid) return;
+
+    var existing = state.ui.editingMetricId ? getMetric(state.ui.editingMetricId) : null;
+    var baseline = baselineRaw === "" ? state.vehicle.currentOdometer : parseInt(baselineRaw, 10);
+    if(baselineRaw !== "" && (!Number.isInteger(baseline) || baseline < 0)){
+      // Baseline is optional with no dedicated error UI per spec; an invalid
+      // entry silently falls back to the default rather than blocking save.
+      baseline = state.vehicle.currentOdometer;
+    }
+
+    if(existing){
+      existing.name = name;
+      existing.interval = interval;
+      existing.warningThreshold = threshold;
+      existing.lastService = baseline;
+    } else {
+      state.metrics.push({
+        id: "m" + Date.now(),
+        name: name, interval: interval, warningThreshold: threshold,
+        lastService: baseline
+      });
+    }
+    renderDashboard();
+    if(state.ui.editReturnTo === "detail"){
+      state.ui.detailMetricId = existing ? existing.id : state.ui.detailMetricId;
+      renderDetail();
+      show("detail");
+    } else {
+      show("dashboard");
+    }
+  });
+
+  /* ============================================================
+     MODAL — generic focus trap for the pre-departure warning dialog
+     (role="dialog"; must trap Tab, close on Escape, restore focus)
+  ============================================================ */
+  var predepModal = document.getElementById("predeparture-modal");
+  var modalLastFocused = null;
+
+  function openPredepartureModal(){
+    modalLastFocused = document.activeElement;
+    predepModal.classList.add("is-visible");
+    document.addEventListener("keydown", onModalKeydown, true);
+    // Move focus into the dialog (onto its primary action) so Tab stays trapped
+    // and the modal's accessible name (aria-labelledby) is announced on entry.
+    document.getElementById("btn-modal-health").focus();
+  }
+  function closePredepartureModal(){
+    predepModal.classList.remove("is-visible");
+    document.removeEventListener("keydown", onModalKeydown, true);
+    if(modalLastFocused && typeof modalLastFocused.focus === "function"){
+      modalLastFocused.focus();
+    }
+    modalLastFocused = null;
+  }
+  function onModalKeydown(e){
+    if(e.key === "Escape"){
+      e.preventDefault();
+      closePredepartureModal();
+      return;
+    }
+    if(e.key === "Tab"){
+      var focusables = Array.prototype.slice.call(
+        predepModal.querySelectorAll('button, [href], input, [tabindex]:not([tabindex="-1"])')
+      ).filter(function(el){ return el.offsetParent !== null; });
+      if(!focusables.length) return;
+      var first = focusables[0], last = focusables[focusables.length - 1];
+      if(e.shiftKey && document.activeElement === first){
+        e.preventDefault(); last.focus();
+      } else if(!e.shiftKey && document.activeElement === last){
+        e.preventDefault(); first.focus();
+      } else if(predepModal.contains(document.activeElement) === false){
+        // focus somehow escaped the dialog — pull it back in
+        e.preventDefault(); first.focus();
+      }
+    }
+  }
+
+  /* ============================================================
+     TOURING PLAN LIST + NEW PLAN + PRE-DEPARTURE CHECK
+  ============================================================ */
+  document.getElementById("btn-new-plan").addEventListener("click", function(){
+    document.getElementById("plan-vehicle-name").textContent = state.vehicle.name;
+    show("newplan");
+  });
+
+  document.getElementById("btn-start-plan").addEventListener("click", function(){
+    var overdue = state.metrics
+      .map(function(m){ return { m:m, c:computeMetric(m) }; })
+      .filter(function(x){ return x.c.status === "overdue"; })
+      .sort(function(a,b){ return a.c.remaining - b.c.remaining; }); // most negative (worst) first
+
+    if(overdue.length > 0){
+      var list = document.getElementById("modal-overdue-list");
+      list.innerHTML = "";
+      overdue.forEach(function(x){
+        var row = document.createElement("div");
+        row.className = "modal-list-item";
+        row.innerHTML = '<span class="m-name">'+x.m.name+'</span><span class="m-over tabular">Overdue by '+fmt(Math.abs(x.c.remaining))+' km</span>';
+        list.appendChild(row);
+      });
+      openPredepartureModal();
+    } else {
+      proceedToMap();
+    }
+  });
+
+  document.getElementById("btn-modal-proceed").addEventListener("click", function(){
+    closePredepartureModal();
+    proceedToMap();
+  });
+  document.getElementById("btn-modal-health").addEventListener("click", function(){
+    closePredepartureModal();
+    renderDashboard();
+    show("dashboard");
+  });
+
+  /* ============================================================
+     MAP TRACKING — simulated
+  ============================================================ */
+  var routePath = document.getElementById("route-path");
+  var routeDot = document.getElementById("route-dot");
+  var endMarker = document.getElementById("route-end-marker");
+  var pathLength = 0;
+  function preparePath(){
+    pathLength = routePath.getTotalLength();
+    routePath.style.strokeDasharray = pathLength;
+    routePath.style.strokeDashoffset = pathLength;
+    endMarker.setAttribute("opacity", "0");
+    // Derive the dot's motion path from the route path's own "d" so there is a
+    // single source of truth for the route geometry (was previously duplicated
+    // as a hardcoded string in the inline style).
+    routeDot.style.offsetPath = "path('" + routePath.getAttribute("d") + "')";
+    routeDot.style.offsetDistance = "0%";
+  }
+
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Guards against overlapping animation loops: if a new trip is started
+  // (e.g. user backs out mid-animation and launches another plan) before a
+  // prior trip's requestAnimationFrame loop has finished, the stale loop's
+  // token no longer matches and it stops touching shared state.
+  var tripRunToken = 0;
+
+  function proceedToMap(){
+    tripRunToken += 1;
+    var myToken = tripRunToken;
+
+    document.getElementById("map-plan-title").textContent = document.getElementById("f-plan-name").value || "Touring Plan";
+    document.getElementById("map-vehicle-chip").textContent = state.vehicle.name;
+    state.trip = { distance:0, elapsedSec:0, running:true, done:false, hasStarted:true, applied:null };
+    renderMapIdleState(); // remove the idle CTA overlay now that a trip is running
+    show("map");
+    preparePath();
+    document.getElementById("btn-end-trip").disabled = true;
+    document.getElementById("map-progress-hint").textContent = "Recording your route…";
+    updateMapReadout();
+
+    var start = null;
+    function tick(ts){
+      if(myToken !== tripRunToken) return; // superseded by a newer trip; stop mutating state
+      if(start === null) start = ts;
+      var t = reduceMotion ? 1 : clamp((ts - start) / TRIP_ANIM_MS, 0, 1);
+      var eased = 1 - Math.pow(1 - t, 2); // ease-out
+      state.trip.distance = +(TRIP_DISTANCE_KM * eased).toFixed(1);
+      state.trip.elapsedSec = Math.round(TRIP_ELAPSED_SEC * eased);
+      routePath.style.strokeDashoffset = pathLength * (1 - eased);
+      routeDot.style.offsetDistance = (eased*100) + "%";
+      updateMapReadout();
+      if(t < 1){
+        requestAnimationFrame(tick);
+      } else {
+        state.trip.distance = TRIP_DISTANCE_KM;
+        state.trip.elapsedSec = TRIP_ELAPSED_SEC;
+        state.trip.running = false;
+        state.trip.done = true;
+        endMarker.setAttribute("opacity", "1");
+        document.getElementById("map-progress-hint").textContent = "Trip complete — ready to save.";
+        document.getElementById("btn-end-trip").disabled = false;
+        updateMapReadout();
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function updateMapReadout(){
+    var d = state.trip.distance;
+    var h = Math.floor(state.trip.elapsedSec/3600);
+    var mnt = Math.floor((state.trip.elapsedSec%3600)/60);
+    var sec = state.trip.elapsedSec%60;
+    var speed = state.trip.elapsedSec > 0 ? Math.round(d / (state.trip.elapsedSec/3600)) : 0;
+    document.getElementById("map-distance").textContent = d.toFixed(1) + " km";
+    document.getElementById("map-time").textContent = h+":"+String(mnt).padStart(2,"0")+":"+String(sec).padStart(2,"0");
+    document.getElementById("map-speed").textContent = speed + " km/h";
+  }
+
+  document.getElementById("btn-end-trip").addEventListener("click", function(){
+    if(!state.trip.done) return;
+    renderSummary();
+    show("summary");
+  });
+
+  /* ============================================================
+     TRIP SUMMARY — feedback loop into HEALTH_CHECK
+  ============================================================ */
+  function renderSummary(){
+    document.getElementById("summary-distance").textContent = state.trip.distance.toFixed(1) + " km";
+    var h = Math.floor(state.trip.elapsedSec/3600), mnt = Math.floor((state.trip.elapsedSec%3600)/60), sec = state.trip.elapsedSec%60;
+    document.getElementById("summary-time").textContent = h+":"+String(mnt).padStart(2,"0")+":"+String(sec).padStart(2,"0");
+    document.getElementById("summary-speed").textContent = Math.round(state.trip.distance/(state.trip.elapsedSec/3600)) + " km/h";
+    document.getElementById("summary-confirm-text").innerHTML =
+      "Trip recorded: <strong>"+state.trip.distance.toFixed(1)+" km</strong>. Add to "+state.vehicle.name+"'s total distance?";
+    document.getElementById("summary-confirm-card").style.display = "flex";
+    var resultEl = document.getElementById("summary-result");
+    resultEl.className = "result-callout";
+    resultEl.textContent = "";
+    document.getElementById("btn-summary-done").style.display = "none";
+    state.trip.applied = null;
+  }
+
+  document.getElementById("btn-add-total").addEventListener("click", function(){
+    if(state.trip.applied) return;
+    var before = getMetric("oil") ? computeMetric(getMetric("oil")) : null;
+    state.vehicle.currentOdometer += state.trip.distance; // single shared field — every metric's remaining/status is derived from this
+    state.trip.applied = "added";
+    var oil = getMetric("oil");
+    var after = oil ? computeMetric(oil) : null;
+    var resultEl = document.getElementById("summary-result");
+    resultEl.classList.add("is-visible");
+    if(after && after.status === "overdue" && before && before.status !== "overdue"){
+      resultEl.classList.add("rc-flip");
+      resultEl.innerHTML = "Added " + state.trip.distance.toFixed(1) + " km to every tracked metric. <strong>Engine Oil is now OVERDUE by "+fmt(Math.abs(after.remaining))+" km</strong> — it was in warning before this trip.";
+    } else {
+      resultEl.classList.add("rc-neutral");
+      resultEl.textContent = "Added " + state.trip.distance.toFixed(1) + " km to " + state.vehicle.name + "'s tracked metrics.";
+    }
+    document.getElementById("summary-confirm-card").style.display = "none";
+    document.getElementById("btn-summary-done").style.display = "flex";
+  });
+
+  document.getElementById("btn-skip-total").addEventListener("click", function(){
+    state.trip.applied = "skipped";
+    var resultEl = document.getElementById("summary-result");
+    resultEl.classList.add("is-visible", "rc-neutral");
+    resultEl.textContent = "Not added — " + state.vehicle.name + "'s tracked metrics stay the same.";
+    document.getElementById("summary-confirm-card").style.display = "none";
+    document.getElementById("btn-summary-done").style.display = "flex";
+  });
+
+  document.getElementById("btn-summary-done").addEventListener("click", function(){
+    state.trip = { distance:0, elapsedSec:0, running:false, done:false, hasStarted:false, applied:null };
+    renderDashboard();
+    show("dashboard");
+    renderMapIdleState();
+  });
+
+  /* ============================================================
+     MAP TAB — idle state when no trip is in progress
+  ============================================================ */
+  function renderMapIdleState(){
+    var wrap = document.getElementById("map-canvas-wrap");
+    var existing = document.getElementById("map-idle-cta");
+    if(state.trip.hasStarted){
+      if(existing) existing.remove();
+      return;
+    }
+    if(existing) return;
+    var cta = document.createElement("div");
+    cta.id = "map-idle-cta";
+    cta.className = "idle-map-cta";
+    cta.innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>' +
+      '<h3>No trip in progress</h3>' +
+      '<p>Map tracking starts once you launch a touring plan.</p>' +
+      '<button class="btn btn-outline-accent btn-sm" id="btn-idle-new-plan" type="button">Plan a new tour</button>';
+    wrap.appendChild(cta);
+    document.getElementById("btn-idle-new-plan").addEventListener("click", function(){
+      document.getElementById("plan-vehicle-name").textContent = state.vehicle.name;
+      show("newplan");
+    });
+  }
+
+  /* ============================================================
+     TAB BAR + generic back buttons
+  ============================================================ */
+  document.querySelectorAll("[data-nav]").forEach(function(el){
+    el.addEventListener("click", function(){
+      var target = el.dataset.nav;
+      if(target === "mapTab"){
+        renderMapIdleState();
+        show("map");
+        return;
+      }
+      if(target === "dashboard") renderDashboard();
+      show(target);
+    });
+  });
+
+  /* ============================================================
+     CLOCK (decorative status bar)
+  ============================================================ */
+  function paintClock(){
+    var d = new Date();
+    var h = d.getHours() % 12; if(h===0) h = 12;
+    document.getElementById("clock").textContent = h + ":" + String(d.getMinutes()).padStart(2,"0");
+  }
+  paintClock();
+  setInterval(paintClock, 15000);
+
+  /* ============================================================
+     INIT
+  ============================================================ */
+  renderDashboard();
+  renderMapIdleState();
+  preparePath(); // prime the route dot's motion path so it's never left unset before a trip starts
+  show("dashboard");
+
+})();
+</script>
+
+</body>
+</html>
