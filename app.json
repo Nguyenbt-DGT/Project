@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Moto Companion",
+    "slug": "moto-companion-app",
+    "version": "0.1.0",
+    "scheme": "motocompanion",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false
+    },
+    "android": {
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Moto Companion records your route while you ride so you can review it later.",
+          "isAndroidBackgroundLocationEnabled": false
+        }
+      ],
+      "expo-notifications"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
