@@ -1,0 +1,12 @@
+-- Local development seed data (Rule 4.7).
+-- Loaded by `npx supabase db reset` after all migrations.
+--
+-- Once the initial schema exists, this file MUST contain enough data to exercise all three
+-- features end-to-end:
+--   * one test user (via auth.users)
+--   * one vehicle with a current_odometer_km
+--   * maintenance metrics in all three states: ok, warning, overdue (km-only, time-only, dual-axis)
+--   * one planned trip (TOURING_PLAN)
+--   * one recorded trip with trackpoints (MAP_TRACKING)
+--
+-- No schema statements here — schema changes go in supabase/migrations/ only (Rule 4.1).

@@ -1,0 +1,30 @@
+# Node / Expo
+node_modules/
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+coverage/
+
+# Env & secrets — never commit real keys (Rule 3.6 / 4.8)
+.env
+.env.*
+!.env.example
+
+# Supabase local artifacts
+supabase/.temp/
+supabase/.branches/
+
+# Native build output (managed workflow keeps these out of git)
+ios/
+android/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# OS / editor
+.DS_Store
+*.pem
+.vscode/*.log
