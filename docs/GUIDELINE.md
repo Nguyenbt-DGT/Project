@@ -15,8 +15,11 @@
 | 2 | [moto-app-knowledge-base-en.md](moto-app-knowledge-base-en.md) | The "KB" — business requirements, rules, and OPEN questions |
 | 3 | [FRAMEWORK_RULES.md](FRAMEWORK_RULES.md) | Binding technical rules (stack, structure, testing, conduct) |
 | 4 | This file | Setup & workflow |
-| 5 | [KICKOFF_NOTES.md](KICKOFF_NOTES.md) | Vision/ideas — NOT in scope unless product-owner prioritizes |
-| 6 | `DECISIONS.md` | Decision log — check it before proposing a change of direction |
+| 5 | [DECISIONS.md](DECISIONS.md) | Decision log — resolved open questions, MVP scope; check before changing direction |
+| 6 | [HEALTH_REQ.md](HEALTH_REQ.md) · [GLOBAL_REQ.md](GLOBAL_REQ.md) | Feature & global requirements (Health tab; auth/onboarding/units/language) |
+| 7 | [HEALTH_ACCEPTANCE.md](HEALTH_ACCEPTANCE.md) | Given/When/Then acceptance criteria the tests are written against |
+| 8 | [KNOWN_ISSUES.md](KNOWN_ISSUES.md) | Known limitations & follow-ups |
+| 9 | [KICKOFF_NOTES.md](KICKOFF_NOTES.md) | Vision/ideas — NOT in scope unless product-owner prioritizes |
 
 ---
 
@@ -44,6 +47,7 @@ npm scripts you'll use constantly:
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint over the repo |
 | `npm test` | Jest (unit + component) |
+| `npm run test:db` | Vitest DB/RLS/RPC integration tests against the local Supabase stack (needs `db:reset` first) |
 | `npm run db:reset` | Rebuild local DB from migrations + seed.sql |
 | `npm run db:types` | Regenerate `src/types/database.types.ts` from the local schema |
 
@@ -107,11 +111,15 @@ Each feature folder has its own README with feature-specific rules.
 | **business-analyst** | Turning fuzzy requirements into concrete rules; updating the KB after decisions | New/ambiguous business rule |
 | **designer** | Screen flows, information architecture, wireframes | Feature needs a concrete flow before coding |
 | **frontend-developer** | Building the Expo/React Native implementation | Flow confirmed + prioritized |
+| **backend-developer** | Supabase schema/migrations, RLS, RPCs & triggers, Edge Functions, Render services | Feature needs a data model or API/RPC contract |
+| **qa-automation** | Test suites (unit/component/RLS-integration), quality gates, bug→regression tests | Before any merge to main; whenever a bug is reported |
 
 Handoff pattern: **business-analyst** (what are the rules?) → **product-owner** (is it decided and
-prioritized?) → **designer** (what does it look like?) → **frontend-developer** (build it). Any
-agent that hits an unresolved business question routes it to product-owner; the answer gets written
-back into the KB (by business-analyst) and, if technical, into `DECISIONS.md`.
+prioritized?) → **designer** (what does it look like?) → **backend-developer** (schema & RPC
+contract) → **frontend-developer** (build the UI against that contract) → **qa-automation**
+(coverage + gates before merge). Backend and frontend agree contracts up front and can then work in
+parallel. Any agent that hits an unresolved business question routes it to product-owner; the
+answer gets written back into the KB (by business-analyst) and, if technical, into `DECISIONS.md`.
 
 ---
 
@@ -122,8 +130,11 @@ Full rules in FRAMEWORK_RULES §6. In short:
 - **Pure logic** (`src/features/*/logic/`): Jest unit tests — this is where the KB §2.3 status
   math lives; boundary cases are mandatory (Rule 6.2).
 - **Screens/components**: React Native Testing Library — assert the four screen states.
-- **RLS/RPCs/Edge Functions**: integration tests against the LOCAL Supabase stack (never mocked,
-  never remote — Rules 6.5, 4.7). Every table needs a test proving user A cannot touch user B's rows.
+- **RLS/RPCs/Edge Functions**: **Vitest** integration tests in `tests/db/` against the LOCAL
+  Supabase stack (never mocked, never remote — Rules 6.5, 4.7), run with `npm run test:db` after a
+  `npm run db:reset`. Every table needs a test proving user A cannot touch user B's rows. (Jest and
+  Vitest are separate runners here — Jest ignores `tests/db/`; Jest specs import from
+  `@jest/globals` explicitly.)
 - **Bug fixes**: regression test first (it must fail before the fix, Rule 6.3).
 
 ---
@@ -141,11 +152,20 @@ Full rules in FRAMEWORK_RULES §6. In short:
 - ESLint must stay on **v9** until `eslint-config-expo` supports v10 (its bundled plugins crash on
   v10), and `eslint-import-resolver-typescript` is pinned to ^4 via `overrides` in `package.json`
   for TypeScript 6 compatibility. Don't "upgrade" either without checking Expo support.
+- **RLS policies are not enough in this Supabase CLI version** — new `public` tables are not
+  auto-exposed to `anon`/`authenticated`, so a table with RLS but no `GRANT` returns "permission
+  denied" for everyone. Every table migration must include both the RLS policies **and** the
+  matching `GRANT`s (reference tables: `GRANT SELECT` to `authenticated` only). See the existing
+  migrations for the pattern.
+- **Local analytics is disabled** in `supabase/config.toml` (`[analytics] enabled = false`): its
+  logflare container failed its health check and tore down the whole local stack on `supabase
+  start`. Pure dev-tooling, no schema impact — leave it off.
 
 ---
 
 ## 8. Document status
 
-- **Version**: 1.0 (2026-07-15)
+- **Version**: 1.1 (2026-07-17) — added feature/acceptance/known-issues docs, the Vitest DB suite,
+  and the RLS+GRANT / local-analytics pitfalls after the HEALTH_CHECK MVP build.
 - Keep §7 alive: when you hit a non-obvious problem another agent will hit too, add the lesson here
   (workflow lessons) or in FRAMEWORK_RULES (binding rules) via PR.

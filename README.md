@@ -7,7 +7,7 @@ and record the routes you ride.
 
 | Function | Description |
 |---|---|
-| **HEALTH_CHECK** | Track the vehicle's technical condition (odometer, engine oil, coolant, and user-defined metrics), configure maintenance intervals & warning thresholds, and get notified when service is due (`ok` → `warning` → `overdue`). |
+| **HEALTH_CHECK** | Track the vehicle's technical condition (odometer, engine oil, coolant, and user-defined metrics) against maintenance intervals, and see each part's wear as a four-state status (`fresh` → `due_soon` → `replace` → `overdue`) computed from percentage-of-interval. Also tracks per-part spend for the year. **MVP implemented & tested** — see below. |
 | **TOURING_PLAN** | Plan touring trips (potentially multi-day) with stops/checkpoints. Before departure, the app checks the selected vehicle's maintenance status and warns if service is overdue. |
 | **MAP_TRACKING** | Record trips in real time while riding and redraw the traveled route on a map. Recorded distance feeds the vehicle's total km, which drives maintenance checks. |
 
@@ -31,11 +31,11 @@ New TOURING_PLAN → HEALTH_CHECK status of the chosen vehicle → pre-departure
 
 ```
 app/          Expo Router routes (thin — render features)
-src/          Components, feature modules (health-check, touring-plan, map-tracking), lib, hooks, types
+src/          Feature modules (health-check, touring-plan, map-tracking), lib, components, hooks, types
 supabase/     Migrations (schema source of truth), Edge Functions, seed data
+tests/db/     Vitest DB/RLS/RPC integration tests (run against the local Supabase stack)
 docs/         Project documentation (see below)
-mockup/       HTML design references
-prototype/    Design prototypes
+design/       HTML design references (mockup + prototype)
 .claude/      AI agent definitions and slash commands
 ```
 
@@ -46,8 +46,12 @@ prototype/    Design prototypes
 | [docs/moto-app-knowledge-base-en.md](docs/moto-app-knowledge-base-en.md) | **Business requirements** (the "KB") — what to build |
 | [docs/FRAMEWORK_RULES.md](docs/FRAMEWORK_RULES.md) | **Binding technical rules** — how to build & test it |
 | [docs/GUIDELINE.md](docs/GUIDELINE.md) | Developer & AI-agent workflow guide — setup, day-to-day flow |
+| [docs/HEALTH_REQ.md](docs/HEALTH_REQ.md) | HEALTH_CHECK feature requirements (the Health tab) |
+| [docs/GLOBAL_REQ.md](docs/GLOBAL_REQ.md) | Global requirements — auth, onboarding, units, language |
+| [docs/DECISIONS.md](docs/DECISIONS.md) | Technical/product decision log (scope, resolved open questions) |
+| [docs/HEALTH_ACCEPTANCE.md](docs/HEALTH_ACCEPTANCE.md) | Given/When/Then acceptance criteria for the Health MVP |
+| [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) | Known limitations & follow-ups |
 | [docs/KICKOFF_NOTES.md](docs/KICKOFF_NOTES.md) | Product vision & future ideas (not MVP scope) |
-| `docs/DECISIONS.md` | Technical/product decision log (created on first decision) |
 
 ## Getting started
 
@@ -65,10 +69,27 @@ cp .env.example .env
 npx expo start
 ```
 
+Then reset the local DB from migrations + seed and run the tests:
+
+```bash
+npm run db:reset     # apply migrations + seed
+npm test             # Jest unit tests (pure business logic)
+npm run test:db      # Vitest DB/RLS/RPC tests against the local stack
+```
+
 See [docs/GUIDELINE.md](docs/GUIDELINE.md) for the full workflow, testing, and the available
 Claude Code slash commands (`/run-app-local`, `/smoke-test`, `/regresstion-test`).
 
 ## Status
 
-Pre-MVP. The three core functions are being built first; monetization, AI touring routes, and
+**HEALTH_CHECK (Health tab): MVP implemented and tested.** Live Vitals (odometer + today's
+distance), Service Reminders (four-state wear meters, mark-as-replaced, edit odometer, per-part
+price), and a Spent-this-year summary are built on a Supabase schema with RLS, business-invariant
+RPCs, and seed data. Verified green: `tsc`, `eslint`, 75 Jest unit tests, and 32 Vitest DB/RLS/RPC
+tests against the local stack. Deferred within Health: brand→bike→model selection UI, full
+spend-history page, i18n, push notifications, multi-vehicle UI (see
+[docs/DECISIONS.md](docs/DECISIONS.md) `D-HEALTH-MVP-SCOPE`), plus known limitations in
+[docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md).
+
+**TOURING_PLAN** and **MAP_TRACKING** are not yet started. Monetization, AI touring routes, and
 vehicle auto-detection (see kickoff notes) come later.

@@ -85,11 +85,14 @@ npx supabase gen types typescript --local > src/types/database.types.ts
 Regenerate after every migration. Hand-editing `database.types.ts` is forbidden.
 
 **Rule 2.4** — Model domain states as discriminated unions, not boolean flags. Example — the KB's
-maintenance status (KB §2.3):
+canonical four-state maintenance status (KB §2.3, percentage-of-interval model):
 
 ```ts
-type MetricStatus = 'ok' | 'warning' | 'overdue';
+type MetricStatus = 'fresh' | 'due_soon' | 'replace' | 'overdue';
 ```
+
+These are the exact literals the whole codebase uses; boundary semantics are fixed by
+`D-STATUS-BOUNDARIES` in [DECISIONS.md](DECISIONS.md).
 
 **Rule 2.5** — Validate all external input (API payloads, deep links, Supabase function bodies) with
 **zod** at the boundary. Internal code trusts the parsed types.
@@ -151,7 +154,12 @@ into a migration before committing.
 
 **Rule 4.2** — **RLS is mandatory on every table.** Enable Row Level Security in the same migration
 that creates the table. Default posture: users can only read/write their own rows
-(`auth.uid() = user_id`). A table without RLS is a release blocker.
+(`auth.uid() = user_id`). A table without RLS is a release blocker. **RLS policies alone are not
+sufficient in this project's Supabase CLI version** — new `public` tables are not auto-exposed to
+`anon`/`authenticated`, so the same migration must also `GRANT` the appropriate privileges
+(user-owned tables: SELECT/INSERT/UPDATE/DELETE to `authenticated`; shared reference tables: SELECT
+to `authenticated` only). RLS restricts which rows; GRANT allows the role to touch the table at all
+— you need both.
 
 **Rule 4.3** — Auth: use Supabase Auth via `@supabase/supabase-js`. Session persistence in the app
 uses `expo-secure-store` as the storage adapter. Never store tokens in AsyncStorage or hand-roll auth.

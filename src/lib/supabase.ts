@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
 
 import { env } from './env';
+import type { Database } from '@/types/database.types';
 
 // Rule 4.3: session persistence uses expo-secure-store, never AsyncStorage.
 const secureStoreAdapter = {
@@ -11,9 +12,7 @@ const secureStoreAdapter = {
 };
 
 // Rule 4.4: the single Supabase client for the whole app — import from here only.
-// TODO(Rule 2.3): after the first migration, generate src/types/database.types.ts and add
-// createClient<Database>(...) so all queries are typed.
-export const supabase = createClient(
+export const supabase = createClient<Database>(
   env.EXPO_PUBLIC_SUPABASE_URL,
   env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
   {
