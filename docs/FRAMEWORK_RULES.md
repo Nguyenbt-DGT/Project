@@ -16,7 +16,7 @@
 | Layer | Technology | Notes |
 |---|---|---|
 | Language | **TypeScript** (strict mode) | Everywhere: app, backend, scripts, tests |
-| Mobile app | **Expo** (React Native, Expo Router) | iOS + Android from one codebase |
+| Mobile app | **Expo SDK 54** (React Native 0.81, Expo Router) | iOS + Android from one codebase. SDK **pinned** — see Rule 0.3 |
 | Backend & DB | **Supabase** | Postgres, Auth, Realtime, Storage, Edge Functions |
 | Server hosting | **Render** | For any custom Node/API services & cron jobs that don't fit Supabase Edge Functions |
 
@@ -28,6 +28,15 @@ React Native CLI, AWS Lambda) without an explicit decision from the product-owne
 Realtime) before adding a custom Render service. A Render service is justified only for:
 long-running jobs, heavy scheduled processing, third-party integrations needing a stable server, or
 anything exceeding Edge Function limits (execution time, memory).
+
+**Rule 0.3** — **Pin Expo SDK 54. Do NOT upgrade to a newer SDK (57+).** Target devices require
+SDK 54, so the whole toolchain is pinned to it: `expo@~54`, `react-native@0.81.5`, `react@19.1.0`,
+`typescript@~5.9`, `eslint-config-expo@~10`, `jest-expo@~54`, and the SDK-54 versions of every
+`expo-*` module. `npx expo install <pkg>` (and `--fix`) can silently move the SDK version — after
+any dependency change, `git diff package.json` and revert unintended expo/react-native/typescript
+churn (`rm -rf node_modules package-lock.json && npm install`). Prefer already-installed SDK-54
+Expo modules over adding new native deps (e.g. language persistence uses `expo-secure-store`, not
+`@react-native-async-storage/async-storage`).
 
 ---
 
@@ -85,11 +94,14 @@ npx supabase gen types typescript --local > src/types/database.types.ts
 Regenerate after every migration. Hand-editing `database.types.ts` is forbidden.
 
 **Rule 2.4** — Model domain states as discriminated unions, not boolean flags. Example — the KB's
-maintenance status (KB §2.3):
+canonical four-state maintenance status (KB §2.3, percentage-of-interval model):
 
 ```ts
-type MetricStatus = 'ok' | 'warning' | 'overdue';
+type MetricStatus = 'fresh' | 'due_soon' | 'replace' | 'overdue';
 ```
+
+These are the exact literals the whole codebase uses; boundary semantics are fixed by
+`D-STATUS-BOUNDARIES` in [DECISIONS.md](DECISIONS.md).
 
 **Rule 2.5** — Validate all external input (API payloads, deep links, Supabase function bodies) with
 **zod** at the boundary. Internal code trusts the parsed types.
@@ -151,7 +163,12 @@ into a migration before committing.
 
 **Rule 4.2** — **RLS is mandatory on every table.** Enable Row Level Security in the same migration
 that creates the table. Default posture: users can only read/write their own rows
-(`auth.uid() = user_id`). A table without RLS is a release blocker.
+(`auth.uid() = user_id`). A table without RLS is a release blocker. **RLS policies alone are not
+sufficient in this project's Supabase CLI version** — new `public` tables are not auto-exposed to
+`anon`/`authenticated`, so the same migration must also `GRANT` the appropriate privileges
+(user-owned tables: SELECT/INSERT/UPDATE/DELETE to `authenticated`; shared reference tables: SELECT
+to `authenticated` only). RLS restricts which rows; GRANT allows the role to touch the table at all
+— you need both.
 
 **Rule 4.3** — Auth: use Supabase Auth via `@supabase/supabase-js`. Session persistence in the app
 uses `expo-secure-store` as the storage adapter. Never store tokens in AsyncStorage or hand-roll auth.
@@ -193,7 +210,11 @@ business invariants as Edge Functions (Rule 4.5 — call the RPCs, don't re-impl
 **Rule 5.4** — Every Render service exposes `GET /healthz` returning `200` and its version. Use
 Render Cron Jobs for scheduled work that outgrows Supabase scheduled functions.
 
-**Rule 5.5** — Deploys happen from `main` via Render auto-deploy. Never deploy from feature branches.
+**Rule 5.5** — **CI/CD is GitHub Actions, not Render auto-deploy** (`.github/workflows/`). CI
+(`ci.yml`) runs the gates on every push/PR; CD (`deploy.yml`) deploys from `main` only (DB
+migrations via `supabase db push`; the app via EAS). If a Render service exists (Rule 5.1) it is
+deployed by the GitHub Actions pipeline, never a Render dashboard auto-deploy hook. Never deploy
+from feature branches.
 
 ---
 
@@ -209,11 +230,12 @@ Render Cron Jobs for scheduled work that outgrows Supabase scheduled functions.
 | E2E | **Maestro** (post-MVP) | Critical flows: sign-in, log a service, record a trip, create a plan |
 
 **Rule 6.2** — Business rules from the KB are the primary test targets. At minimum, the KB §2.3
-status computation requires unit tests for ALL of:
-- `remaining <= 0` → `overdue`; `0 < remaining <= warning_threshold` → `warning`; else `ok`
-- km-only, time-only, and dual-axis metrics (dual-axis: overall = worse of the two)
-- boundary values: `remaining == 0` (overdue) and `remaining == warning_threshold` (warning)
-- trip distance accumulation increments shared odometer once and never mutates `last_service_km`
+status computation requires unit tests for ALL of (see `DECISIONS.md` `D-STATUS-BOUNDARIES`):
+- the four status boundaries: `p ≤ 0.65` fresh, `0.65 < p ≤ 0.90` due_soon, `0.90 < p ≤ 1.00`
+  replace, `p > 1.00` overdue (each boundary value belongs to the lower-severity state)
+- km, time (days), and event-count axes, and dual-axis worst-of-two
+- boundary values exactly at `0.65`, `0.90`, `1.00`, and just past `1.00`
+- trip distance accumulation increments the shared odometer once and never mutates `last_service_km`
 
 **Rule 6.3** — Every bug fix ships with a regression test that fails before the fix.
 
@@ -242,7 +264,11 @@ Supabase stack, not against a mocked client. Mock only true externals (Expo Push
 **Rule 7.3** — A PR contains one logical change. Schema migration + the code using it may ship
 together; unrelated refactors may not.
 
-**Rule 7.4** — CI (GitHub Actions) runs typecheck, lint, and tests on every PR. Red CI blocks merge.
+**Rule 7.4** — **CI/CD is GitHub Actions** (`.github/workflows/ci.yml` + `deploy.yml`). CI runs
+typecheck, lint, unit tests, and the DB/RLS/RPC suite (plus a generated-types drift check) on every
+push/PR; red CI blocks merge. CD deploys from `main` only and is inert until repo variable
+`DEPLOY_ENABLED=true` and the deploy secrets are set (see `deploy.yml`). This replaces the earlier
+Render-driven deploy flow.
 
 ---
 

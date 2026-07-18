@@ -1,10 +1,6 @@
-import { PlaceholderScreen } from '@/components/placeholder-screen';
+import { ComingSoonScreen } from '@/components/coming-soon-screen';
 
+// DEMO_FEEDBACK_003 #5: tab body is "Feature coming soon" until TOURING_PLAN is built (KB §3).
 export function TouringPlanScreen() {
-  return (
-    <PlaceholderScreen
-      title="TOURING_PLAN"
-      description="Plan multi-day trips with stops; pre-departure maintenance check (KB §3)."
-    />
-  );
+  return <ComingSoonScreen title="TOURING" />;
 }

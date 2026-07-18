@@ -1,0 +1,32 @@
+# Known Issues & Follow-ups
+
+> Tracked limitations and polish items discovered during the HEALTH_CHECK MVP build (2026-07-17).
+> These are **not** blockers for the Health MVP (which is implemented and passing all gates) but
+> should be addressed before the relevant milestone. Deferred *scope* (as opposed to defects) lives
+> in [DECISIONS.md](DECISIONS.md) `D-HEALTH-MVP-SCOPE`, not here.
+
+| ID | Area | Issue | Impact | Suggested owner |
+|---|---|---|---|---|
+| KI-1 | Auth / web | `expo-secure-store` has **no web implementation**, so Supabase session persistence throws on the web target. | Browser-based auth/session testing is blocked; iOS/Android are unaffected. | frontend-developer / backend-developer — add a web storage fallback (e.g., a platform-split storage adapter) before relying on the web build for auth. |
+| KI-2 | Health / copy | The remaining-value caption reads oddly once a part is Overdue (e.g., "Overdue 10,000 km … / 10,000 km remaining" instead of "overdue by X"). | Cosmetic; wording only, status/color are correct. | designer + business-analyst — confirm the Overdue caption wording (HEALTH_REQ §5 only specified the non-overdue template). |
+| KI-3 | Health / axes | Remaining-value wording for the time and event-count axes ("195 days remaining", "1 event remaining") extends HEALTH_REQ §5's km/mi-only template — an implementation choice, not a specified rule. | Minor; needs product confirmation for consistency. | business-analyst / designer. |
+| KI-4 | Health / Live Vitals | "Today's distance" sums trips recorded today regardless of whether `apply_trip_distance` has folded them into the odometer — an interpretation, since HEALTH_REQ §3 doesn't disambiguate. | Minor; edge behavior. | business-analyst to confirm intended definition. |
+| KI-5 | Onboarding / i18n | **Resolved (DEMO_FEEDBACK_002 #1)** — English/Vietnamese switching now works app-wide (`src/i18n.tsx` + inline `vi` translations in `logic/labels.ts`), with an EN/VI toggle on the Health tab and in onboarding. Two residual limitations: persistence is native-only (web falls back to in-memory per KI-1), and the dev-only sign-in screen (`app/(auth)/sign-in.tsx`) is not localized. | Minor residuals only. | frontend — localize the real (Google OAuth) sign-in screen when it replaces the dev stub. |
+| KI-8 | Health / last-service edit | The "Last service (odometer)" checkpoint editor (DEMO_FEEDBACK_002 #2) writes `last_service_km` directly and is **not covered by the undo/`service_events` mechanism** (that only tracks mark-as-replaced). Setting it is validated (0..current odometer) but not reversible in one tap. | Manual last-service edits can't be undone. | backend + frontend — extend the event log to cover manual baseline edits if undo is wanted here. |
+| KI-6 | Health / undo | `undo_last_service` restores the wear baseline (and coupled oil_filter counter) but **does not revert a price/spend entry** recorded alongside the mark. If the user entered a price then undid, the spend entry and `price_cents` remain. | Undo is incomplete when a price was entered during the mark. | backend + frontend — extend the event snapshot to also capture/revert the spend entry, or block price entry on the mark path. |
+| KI-7 | Onboarding / time-axis baseline | Not-recently-changed **time-based** parts (e.g. brake fluid) start their clock at onboarding (baseline = now, 0%), unlike not-changed **km** parts which reflect accumulated wear. There's no past-service-date signal to reflect, so the two axes are treated asymmetrically (documented in D-DEMO1). | A used bike's time-based parts may look fresher than reality until first service. | business-analyst / product-owner to confirm the intended onboarding baseline for time-based parts. |
+| KI-9 | Navigation / MAP_TRACKING | The 3rd tab was repurposed from "Tracking" (MAP_TRACKING) to a "Lucky Draw" coming-soon placeholder per explicit demo feedback (DEMO_FEEDBACK_003 #5, `D-DEMO3`). MAP_TRACKING is a KB core function (KB §4) with code still in `src/features/map-tracking/`, but it currently has **no tab pointing to it**. | MAP_TRACKING is unreachable from the UI until its nav placement is decided. | product-owner — decide where MAP_TRACKING resurfaces in navigation (new tab? merged into Touring? replaces Lucky Draw once GPS tracking is built?). |
+| KI-10 | Part-name translations | The Vietnamese names in `logic/part-names.ts` (13 default parts) are AI-drafted, not verified by a native speaker (DEMO_FEEDBACK_003 #1 / `D-DEMO3`). | Terminology may not match real Vietnamese motorcycle-maintenance usage. | business-analyst — review/correct the `vi` values in `part-names.ts`. |
+| KI-11 | Deployment / hosting | The app still runs against a **local** Supabase stack + Expo Go tunnel, not the hosted setup documented in GUIDELINE §8 (DEMO_FEEDBACK_003 #3 + hosting request, `D-DEMO3`). Moving to a hosted Supabase project and an EAS-built, TestFlight-distributed app requires the user's own Supabase/Expo/Apple accounts, which an AI agent can't create. | Every session still needs a locally-started dev server; there is no persistent installed app yet. | user (with AI assistance) — work through GUIDELINE.md §8. |
+
+## Resolved during the build
+
+- **Doc arithmetic error** (fixed): HEALTH_ACCEPTANCE AC-4 and DECISIONS D-UNIT-ROUNDING stated
+  40,355 km = 25,076 mi; the correct value is **25,075 mi** (40355 × 0.621371 = 25,075.43). The
+  product code and tests were already correct; the two docs were corrected to match.
+- **`mark_service_done` lock ordering** (fixed by backend-developer): locked `service_items` before
+  `vehicles`, a deadlock risk against the coupled oil-filter update; now always locks the vehicle
+  first.
+- **Mark-as-replaced price** (fixed by frontend-developer): entering a price on mark-as-replaced
+  updated the Spend total but not the reminders footer, because the RPC doesn't touch `price_cents`;
+  the mutation now writes `price_cents` alongside the spend entry.
