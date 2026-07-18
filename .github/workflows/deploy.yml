@@ -1,0 +1,59 @@
+name: Deploy
+
+# CD half of the GitHub-Actions-based CI/CD (replaces Render auto-deploy — FRAMEWORK_RULES §5/§7).
+# Deploys are driven from `main` by GitHub Actions, not by a Render dashboard hook.
+#
+# This workflow is INERT until you enable it: set repository variable DEPLOY_ENABLED=true and add
+# the secrets referenced below. Until then it is skipped, so merges to main don't fail.
+#
+# Required to enable:
+#   - Repo variable:  DEPLOY_ENABLED = "true"
+#   - Secrets:        SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF, SUPABASE_DB_PASSWORD
+#                     (and EXPO_TOKEN if you enable the app-build job)
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  supabase-migrations:
+    name: Push DB migrations → production
+    if: ${{ vars.DEPLOY_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Link project
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      - name: Push migrations
+        run: supabase db push
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+
+  # App build/submit. Uncomment and provide EXPO_TOKEN to enable EAS builds from CI.
+  # eas-build:
+  #   name: EAS build (iOS/Android)
+  #   if: ${{ vars.DEPLOY_ENABLED == 'true' }}
+  #   needs: supabase-migrations
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with: { node-version: 20, cache: npm }
+  #     - uses: expo/expo-github-action@v8
+  #       with:
+  #         eas-version: latest
+  #         token: ${{ secrets.EXPO_TOKEN }}
+  #     - run: npm ci
+  #     - run: eas build --platform all --non-interactive --no-wait

@@ -19,11 +19,14 @@ The Health tab tells the rider the **current technical condition of the bike** a
 reminds them **what needs servicing and when**. The two areas that carry the most product value are
 **Service Reminders** and **part-wear tracking** — everything else on the page supports them.
 
-The page is composed of three stacked sections, in priority order:
+The page is composed of three stacked sections. **On-screen order (DEMO_FEEDBACK_001 #3):**
 
-1. **Service Reminders** (primary) — part-wear status + maintenance schedule.
-2. **Spent this year** (secondary) — money spent on parts/services this calendar year.
-3. **Live Vitals** (lowest emphasis) — current odometer and today's distance.
+1. **Live Vitals** — current odometer and today's distance.
+2. **Service Reminders** — part-wear status + maintenance schedule (the primary-*value* section).
+3. **Spent this year** — money spent on parts/services this calendar year.
+
+(Service Reminders remains the section that carries the most product value; the demo feedback set
+the *display* order above, which supersedes the earlier value-emphasis ordering.)
 
 ---
 

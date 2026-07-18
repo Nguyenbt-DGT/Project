@@ -2,9 +2,11 @@
 // unions over booleans). This file MAY import the generated DB types (read-only, structural use)
 // but stays React/Supabase-call-free — it only maps data, never fetches it.
 
+import type { Language } from '@/i18n';
 import type { Tables } from '@/types/database.types';
 
 import { formatRemainingCaption, formatStatusLabel } from './logic/labels';
+import { resolvePartName } from './logic/part-names';
 import {
   axisResultsForItem,
   clampProgress,
@@ -69,7 +71,8 @@ export function toServiceItemViewModel(
   row: ServiceItemRow,
   vehicle: VehicleRow,
   now: Date,
-  unit: DistanceUnit
+  unit: DistanceUnit,
+  language: Language = 'en'
 ): ServiceItemViewModel {
   const axisResults = axisResultsForItem(row, vehicle, now);
   const driving = worstAxisResult(axisResults);
@@ -80,11 +83,11 @@ export function toServiceItemViewModel(
   return {
     id: row.id,
     typeKey: row.type_key,
-    name: row.name,
+    name: resolvePartName(row.type_key, row.name, language),
     status,
     progressClamped,
-    displayLabel: formatStatusLabel(status, valueDisplay),
-    remainingCaption: valueDisplay ? formatRemainingCaption(valueDisplay) : '',
+    displayLabel: formatStatusLabel(status, valueDisplay, language),
+    remainingCaption: valueDisplay ? formatRemainingCaption(valueDisplay, language) : '',
     isOverdue: status === 'overdue',
     priceCents: row.price_cents,
     intervalKm: row.interval_km,

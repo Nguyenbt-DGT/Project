@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useT } from '../i18n';
 import { HEALTH_LABELS } from '../logic/labels';
 import { COLORS, RADIUS, SPACING, STATUS_COLORS } from './theme';
 
@@ -27,11 +28,12 @@ export function AsyncState({
   emptyMessage,
   children,
 }: AsyncStateProps) {
+  const t = useT();
   if (isLoading) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator color={COLORS.accent} />
-        <Text style={styles.mutedText}>{HEALTH_LABELS.common.loading.fallback}</Text>
+        <Text style={styles.mutedText}>{t(HEALTH_LABELS.common.loading)}</Text>
       </View>
     );
   }
@@ -39,10 +41,10 @@ export function AsyncState({
   if (isError) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.errorText}>{errorMessage ?? HEALTH_LABELS.common.error.fallback}</Text>
+        <Text style={styles.errorText}>{errorMessage ?? t(HEALTH_LABELS.common.error)}</Text>
         {onRetry ? (
           <Pressable onPress={onRetry} style={styles.retryButton} accessibilityRole="button">
-            <Text style={styles.retryButtonText}>{HEALTH_LABELS.common.retry.fallback}</Text>
+            <Text style={styles.retryButtonText}>{t(HEALTH_LABELS.common.retry)}</Text>
           </Pressable>
         ) : null}
       </View>

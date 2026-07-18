@@ -1,9 +1,19 @@
 import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
+import { useT } from '../i18n';
 import { HEALTH_LABELS } from '../logic/labels';
 import { formatDistance, roundKmForStorage, type DistanceUnit } from '../logic/units';
-import { COLORS, RADIUS, SPACING } from './theme';
+import { COLORS, RADIUS, SPACING, STATUS_COLORS } from './theme';
 
 interface EditOdometerModalProps {
   visible: boolean;
@@ -25,6 +35,7 @@ export function EditOdometerModal({
   onSave,
   isSaving,
 }: EditOdometerModalProps) {
+  const t = useT();
   const [input, setInput] = useState('');
   const [error, setError] = useState(false);
 
@@ -46,14 +57,20 @@ export function EditOdometerModal({
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      {/* DEMO_FEEDBACK_003 #2: keep the input reachable above the keyboard. */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.overlay}
+      >
         <View style={styles.card}>
-          <Text style={styles.title}>{HEALTH_LABELS.editOdometer.title.fallback}</Text>
+          <Text style={styles.title}>{t(HEALTH_LABELS.editOdometer.title)}</Text>
           <Text style={styles.currentValue}>
-            {HEALTH_LABELS.liveVitals.odometer.fallback}: {formatDistance(currentOdometerKm, unit)}
+            {t(HEALTH_LABELS.liveVitals.odometer)}: {formatDistance(currentOdometerKm, unit)}
           </Text>
           <View style={styles.field}>
-            <Text style={styles.fieldLabel}>{HEALTH_LABELS.editOdometer.inputLabel.fallback} ({unit})</Text>
+            <Text style={styles.fieldLabel}>
+              {t(HEALTH_LABELS.editOdometer.inputLabel)} ({unit})
+            </Text>
             <TextInput
               style={[styles.input, error ? styles.inputError : null]}
               keyboardType="numeric"
@@ -62,13 +79,17 @@ export function EditOdometerModal({
                 setInput(text);
                 setError(false);
               }}
-              placeholder={String(Math.round(unit === 'mi' ? currentOdometerKm * 0.621371 : currentOdometerKm))}
+              placeholder={String(
+                Math.round(unit === 'mi' ? currentOdometerKm * 0.621371 : currentOdometerKm)
+              )}
             />
-            {error ? <Text style={styles.errorText}>{HEALTH_LABELS.editOdometer.error.fallback}</Text> : null}
+            {error ? (
+              <Text style={styles.errorText}>{t(HEALTH_LABELS.editOdometer.error)}</Text>
+            ) : null}
           </View>
           <View style={styles.actions}>
             <Pressable style={styles.ghostButton} onPress={onClose} accessibilityRole="button">
-              <Text style={styles.ghostButtonText}>{HEALTH_LABELS.common.cancel.fallback}</Text>
+              <Text style={styles.ghostButtonText}>{t(HEALTH_LABELS.common.cancel)}</Text>
             </Pressable>
             <Pressable
               style={[styles.primaryButton, isSaving ? styles.primaryButtonDisabled : null]}
@@ -77,12 +98,12 @@ export function EditOdometerModal({
               accessibilityRole="button"
             >
               <Text style={styles.primaryButtonText}>
-                {isSaving ? HEALTH_LABELS.common.loading.fallback : HEALTH_LABELS.common.save.fallback}
+                {isSaving ? t(HEALTH_LABELS.common.loading) : t(HEALTH_LABELS.common.save)}
               </Text>
             </Pressable>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -90,7 +111,7 @@ export function EditOdometerModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(10,16,13,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     padding: SPACING.lg,
   },
@@ -127,10 +148,10 @@ const styles = StyleSheet.create({
     color: COLORS.ink,
   },
   inputError: {
-    borderColor: '#d03b3b',
+    borderColor: STATUS_COLORS.overdue,
   },
   errorText: {
-    color: '#d03b3b',
+    color: STATUS_COLORS.overdue,
     fontSize: 12,
   },
   actions: {

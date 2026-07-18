@@ -1,0 +1,63 @@
+name: CI
+
+# CI for the Moto Companion App. Runs the same gates a developer runs locally
+# (FRAMEWORK_RULES §6): typecheck, lint, unit tests, and the DB/RLS/RPC suite against a real
+# local Supabase stack. This is the CI half of the GitHub-Actions-based CI/CD (it replaces the
+# previous Render-driven flow — see FRAMEWORK_RULES §5/§7).
+
+on:
+  push:
+    branches: [main, 'dev/**', 'feature/**']
+  pull_request:
+    branches: [main]
+
+# Cancel superseded runs on the same ref to save minutes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Typecheck · Lint · Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - name: Lint
+        run: npx eslint .
+      - name: Unit tests (Jest)
+        run: npm test
+
+  database:
+    name: DB · RLS · RPC tests (local Supabase)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: npm ci
+      - name: Start local Supabase (Docker)
+        run: supabase start
+      - name: Apply migrations + seed
+        run: supabase db reset
+      - name: Assert generated types are in sync (Rule 2.3)
+        run: |
+          supabase gen types typescript --local > src/types/database.types.ts
+          git diff --exit-code src/types/database.types.ts \
+            || (echo "::error::database.types.ts is out of sync — run 'npm run db:types' and commit." && exit 1)
+      - name: DB / RLS / RPC tests (Vitest)
+        run: npm run test:db
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop

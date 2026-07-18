@@ -130,6 +130,70 @@ export type Database = {
         }
         Relationships: []
       }
+      service_events: {
+        Row: {
+          coupled_oil_filter_id: string | null
+          coupled_oil_filter_prev_events: number | null
+          created_at: string
+          event_type: string
+          id: string
+          prev_events_elapsed: number
+          prev_last_service_at: string | null
+          prev_last_service_km: number | null
+          service_item_id: string
+          undone_at: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          coupled_oil_filter_id?: string | null
+          coupled_oil_filter_prev_events?: number | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          prev_events_elapsed: number
+          prev_last_service_at?: string | null
+          prev_last_service_km?: number | null
+          service_item_id: string
+          undone_at?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          coupled_oil_filter_id?: string | null
+          coupled_oil_filter_prev_events?: number | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          prev_events_elapsed?: number
+          prev_last_service_at?: string | null
+          prev_last_service_km?: number | null
+          service_item_id?: string
+          undone_at?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_events_coupled_oil_filter_id_fkey"
+            columns: ["coupled_oil_filter_id"]
+            isOneToOne: false
+            referencedRelation: "service_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_events_service_item_id_fkey"
+            columns: ["service_item_id"]
+            isOneToOne: false
+            referencedRelation: "service_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_events_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_items: {
         Row: {
           created_at: string
@@ -333,6 +397,31 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      onboard_vehicle: {
+        Args: {
+          p_brand: string
+          p_current_odometer_km: number
+          p_name: string
+          p_recently_changed: string[]
+          p_unit: string
+        }
+        Returns: {
+          brand: string
+          created_at: string
+          current_odometer_km: number
+          id: string
+          model: string | null
+          name: string
+          unit_preference: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "vehicles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       set_odometer: {
         Args: { p_value_km: number; p_vehicle_id: string }
         Returns: {
@@ -348,6 +437,29 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "vehicles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      undo_last_service: {
+        Args: { p_service_item_id: string }
+        Returns: {
+          created_at: string
+          events_elapsed: number
+          id: string
+          interval_days: number | null
+          interval_events: number | null
+          interval_km: number | null
+          last_service_at: string | null
+          last_service_km: number | null
+          name: string
+          price_cents: number | null
+          type_key: string
+          vehicle_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "service_items"
           isOneToOne: true
           isSetofReturn: false
         }

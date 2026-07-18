@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useLanguage } from '@/i18n';
+
+import { useT } from '../i18n';
 import { HEALTH_LABELS } from '../logic/labels';
 import type { DistanceUnit } from '../logic/units';
 import { toServiceItemViewModel, type ServiceItemRow, type ServiceItemViewModel, type VehicleRow } from '../types';
@@ -22,6 +25,8 @@ interface ServiceRemindersSectionProps {
   isMarkingDone: boolean;
   onEditOdometer: (valueKm: number) => void;
   isSavingOdometer: boolean;
+  onSetLastService: (item: ServiceItemViewModel, lastServiceKm: number) => void;
+  isSettingLastService: boolean;
 }
 
 function formatCentsTotal(cents: number): string {
@@ -41,13 +46,17 @@ export function ServiceRemindersSection({
   isMarkingDone,
   onEditOdometer,
   isSavingOdometer,
+  onSetLastService,
+  isSettingLastService,
 }: ServiceRemindersSectionProps) {
   const [selectedItem, setSelectedItem] = useState<ServiceItemViewModel | null>(null);
   const [isEditingOdometer, setIsEditingOdometer] = useState(false);
+  const t = useT();
+  const { language } = useLanguage();
 
   const viewModels = useMemo(
-    () => (items ?? []).map((row) => toServiceItemViewModel(row, vehicle, now, unit)),
-    [items, vehicle, now, unit]
+    () => (items ?? []).map((row) => toServiceItemViewModel(row, vehicle, now, unit, language)),
+    [items, vehicle, now, unit, language]
   );
 
   const runningTotalCents = useMemo(
@@ -58,23 +67,23 @@ export function ServiceRemindersSection({
   return (
     <View style={styles.section}>
       <View style={styles.headerRow}>
-        <Text style={styles.title}>{HEALTH_LABELS.serviceReminders.title.fallback}</Text>
+        <Text style={styles.title}>{t(HEALTH_LABELS.serviceReminders.title)}</Text>
         <Pressable
           onPress={() => setIsEditingOdometer(true)}
           accessibilityRole="button"
           style={styles.editOdometerButton}
         >
-          <Text style={styles.editOdometerText}>{HEALTH_LABELS.serviceReminders.editOdometer.fallback}</Text>
+          <Text style={styles.editOdometerText}>{t(HEALTH_LABELS.serviceReminders.editOdometer)}</Text>
         </Pressable>
       </View>
 
       <AsyncState
         isLoading={isLoading}
         isError={isError}
-        errorMessage={HEALTH_LABELS.serviceReminders.error.fallback}
+        errorMessage={t(HEALTH_LABELS.serviceReminders.error)}
         onRetry={onRetry}
         isEmpty={viewModels.length === 0}
-        emptyMessage={HEALTH_LABELS.serviceReminders.empty.fallback}
+        emptyMessage={t(HEALTH_LABELS.serviceReminders.empty)}
       >
         <View style={styles.list}>
           {viewModels.map((item) => (
@@ -82,7 +91,7 @@ export function ServiceRemindersSection({
           ))}
         </View>
         <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>{HEALTH_LABELS.serviceReminders.runningTotal.fallback}</Text>
+          <Text style={styles.totalLabel}>{t(HEALTH_LABELS.serviceReminders.runningTotal)}</Text>
           <Text style={styles.totalValue}>{formatCentsTotal(runningTotalCents)}</Text>
         </View>
       </AsyncState>
@@ -90,11 +99,18 @@ export function ServiceRemindersSection({
       <ServiceItemDetailSheet
         item={selectedItem}
         unit={unit}
+        currentOdometerKm={vehicle.current_odometer_km}
         onClose={() => setSelectedItem(null)}
         isMarking={isMarkingDone}
         onMarkDone={(priceCents) => {
           if (!selectedItem) return;
           onMarkDone(selectedItem, priceCents);
+          setSelectedItem(null);
+        }}
+        isSettingLastService={isSettingLastService}
+        onSetLastService={(lastServiceKm) => {
+          if (!selectedItem) return;
+          onSetLastService(selectedItem, lastServiceKm);
           setSelectedItem(null);
         }}
       />

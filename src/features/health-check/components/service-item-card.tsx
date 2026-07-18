@@ -1,6 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useT } from '../i18n';
 import { HEALTH_LABELS } from '../logic/labels';
 import type { ServiceItemViewModel } from '../types';
 import { COLORS, RADIUS, SPACING, STATUS_COLORS, STATUS_SOFT_COLORS } from './theme';
@@ -14,6 +15,7 @@ interface ServiceItemCardProps {
 /** One Service Reminders card (HEALTH_REQ §4.1): name, ⚠ on overdue, colored wear meter, status
  * message, remaining caption. Tapping opens the basic detail view. */
 export function ServiceItemCard({ item, onPress }: ServiceItemCardProps) {
+  const t = useT();
   return (
     <Pressable
       style={styles.card}
@@ -28,7 +30,7 @@ export function ServiceItemCard({ item, onPress }: ServiceItemCardProps) {
               name="warning"
               size={16}
               color={STATUS_COLORS.overdue}
-              accessibilityLabel={HEALTH_LABELS.serviceReminders.overdueIcon.fallback}
+              accessibilityLabel={t(HEALTH_LABELS.serviceReminders.overdueIcon)}
             />
           ) : null}
           <Text style={styles.name}>{item.name}</Text>

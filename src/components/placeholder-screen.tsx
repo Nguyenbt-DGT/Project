@@ -1,5 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { COLORS } from '@/theme';
+
 type PlaceholderScreenProps = {
   title: string;
   description: string;
@@ -25,14 +27,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     padding: 24,
+    backgroundColor: COLORS.bg,
   },
   title: {
     fontSize: 22,
     fontWeight: '600',
+    color: COLORS.ink,
   },
   description: {
     fontSize: 15,
-    opacity: 0.7,
+    color: COLORS.inkMuted,
     textAlign: 'center',
   },
 });

@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from '@jest/globals';
 
-import { formatRemainingCaption, formatStatusLabel, HEALTH_LABELS, STATUS_LABELS } from './labels';
+import { formatRemainingCaption, formatStatusLabel, HEALTH_LABELS, resolveLabel, STATUS_LABELS } from './labels';
 
 describe('formatStatusLabel — per-status wording (AC-1)', () => {
   it('fresh: "Fresh", ignoring any value passed in', () => {
@@ -64,6 +64,33 @@ describe('STATUS_LABELS / HEALTH_LABELS — string-key contract (D-HEALTH-MVP-SC
       for (const def of Object.values(group)) {
         expect(def).toHaveProperty('key');
         expect(def).toHaveProperty('fallback');
+      }
+    }
+  });
+});
+
+describe('i18n — English/Vietnamese resolution (DEMO_FEEDBACK_002 #1)', () => {
+  it('resolveLabel returns Vietnamese for "vi", English for "en"', () => {
+    expect(resolveLabel(STATUS_LABELS.fresh, 'en')).toBe('Fresh');
+    expect(resolveLabel(STATUS_LABELS.fresh, 'vi')).toBe('Tốt');
+  });
+
+  it('formatStatusLabel substitutes {value} in the chosen language', () => {
+    expect(formatStatusLabel('due_soon', '874 km', 'vi')).toBe('Đến hạn sau 874 km');
+    expect(formatStatusLabel('overdue', '1 km', 'vi')).toContain('Quá hạn 1 km');
+  });
+
+  it('formatRemainingCaption localizes', () => {
+    expect(formatRemainingCaption('875 km', 'vi')).toBe('còn lại 875 km');
+  });
+
+  it('every label defines a non-empty Vietnamese string (translation coverage)', () => {
+    for (const def of Object.values(STATUS_LABELS)) {
+      expect(def.vi.length).toBeGreaterThan(0);
+    }
+    for (const group of Object.values(HEALTH_LABELS)) {
+      for (const def of Object.values(group)) {
+        expect(def.vi.length).toBeGreaterThan(0);
       }
     }
   });

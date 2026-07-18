@@ -77,19 +77,31 @@ npm test             # Jest unit tests (pure business logic)
 npm run test:db      # Vitest DB/RLS/RPC tests against the local stack
 ```
 
+**CI/CD runs on GitHub Actions** ([.github/workflows/](.github/workflows/)) — `ci.yml` runs these
+same gates on every push/PR; `deploy.yml` handles deploys from `main` (inert until enabled).
+
 See [docs/GUIDELINE.md](docs/GUIDELINE.md) for the full workflow, testing, and the available
 Claude Code slash commands (`/run-app-local`, `/smoke-test`, `/regresstion-test`).
 
 ## Status
 
-**HEALTH_CHECK (Health tab): MVP implemented and tested.** Live Vitals (odometer + today's
-distance), Service Reminders (four-state wear meters, mark-as-replaced, edit odometer, per-part
-price), and a Spent-this-year summary are built on a Supabase schema with RLS, business-invariant
-RPCs, and seed data. Verified green: `tsc`, `eslint`, 75 Jest unit tests, and 32 Vitest DB/RLS/RPC
-tests against the local stack. Deferred within Health: brand→bike→model selection UI, full
-spend-history page, i18n, push notifications, multi-vehicle UI (see
-[docs/DECISIONS.md](docs/DECISIONS.md) `D-HEALTH-MVP-SCOPE`), plus known limitations in
-[docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md).
+**HEALTH_CHECK (Health tab): implemented, tested, and iterated through three rounds of demo
+feedback.** Live Vitals, Service Reminders (four-state wear meters, translated part names,
+mark-as-replaced with confirm/undo, editable odometer and per-part last-service checkpoint), a
+Spent-this-year summary with drill-down, a persistent vehicle-edit entry point, first-login
+onboarding, a location-permission notice, and full English/Vietnamese switching are all built on a
+Supabase schema with RLS and business-invariant RPCs. Verified green: `tsc`, `eslint`, 83 Jest unit
+tests, and 38 Vitest DB/RLS/RPC tests against the local stack. Deferred within Health:
+brand→bike→model selection UI, full spend history beyond the current year, push notifications,
+multi-vehicle UI (see [docs/DECISIONS.md](docs/DECISIONS.md) `D-HEALTH-MVP-SCOPE`), plus known
+limitations in [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md).
 
-**TOURING_PLAN** and **MAP_TRACKING** are not yet started. Monetization, AI touring routes, and
-vehicle auto-detection (see kickoff notes) come later.
+The app currently ships 3 tabs: **Health** (above), **Touring** and **Lucky Draw** (both
+"Feature coming soon" placeholders). **TOURING_PLAN** and **MAP_TRACKING** are KB-defined features
+not yet built — MAP_TRACKING currently has no tab pointing to its module (see `KNOWN_ISSUES` KI-9).
+Monetization, AI touring routes, and vehicle auto-detection (see kickoff notes) come later.
+
+**Hosting**: the app runs against a local Supabase stack + Expo Go tunnel today. Moving to a hosted
+Supabase project and an installable EAS build (no dev server needed) is documented step-by-step in
+[docs/GUIDELINE.md](docs/GUIDELINE.md) §8, pending the account setup that only the project owner
+can do.

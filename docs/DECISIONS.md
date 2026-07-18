@@ -361,3 +361,183 @@ sense of "it's a new year now." This is a small implementation gap not addressed
 closed here so QA has an unambiguous boundary to test against.
 
 **Status**: Decided.
+
+---
+
+## D-DEMO1 — Demo-feedback round 001 changes
+
+**Date**: 2026-07-18. Source: `docs/DEMO_FEEDBACK_001.md`.
+
+**Decisions**:
+
+1. **Section order (was value-emphasis → now display order)**: the Health tab renders **Live Vitals
+   → Service Reminders → Spent this year** (feedback #3), superseding the earlier
+   Reminders→Spend→Vitals emphasis order in HEALTH_REQ §1 / D-HEALTH-MVP-SCOPE. Service Reminders is
+   still the primary-value section; only the on-screen order changed.
+2. **Theme**: adopt the "Night Garage" look (dark warm canvas + orange accent + lime "healthy"),
+   from `design/prototype/Night Garage.html` / `design/images/health.png` (feedback #1). Palette is
+   shared in `src/theme.ts`.
+3. **Onboarding is now built** (feedback #2): first-login users with no vehicle are routed to an
+   onboarding flow (language, bike name/brand, mileage + unit, recently-changed checklist) that
+   calls the `onboard_vehicle` RPC. **Reconciles D-OQ-H2's internal contradiction** — its decision
+   sentence ("baseline = current odometer for non-changed") conflicted with its own rationale and
+   GLOBAL_REQ §2's acceptance criterion (which imply non-changed parts are *not* at 0%). Resolved in
+   favor of the rationale + GLOBAL_REQ AC: **recently-changed parts start Fresh (0%); not-changed km
+   parts use baseline 0 (reflecting accumulated km-wear, so the checkbox is meaningful). Time-axis
+   parts start the clock at onboarding (baseline = now) either way — there is no past-service-date
+   signal to reflect.** This makes the "recently changed" selection visibly matter.
+4. **Undo "mark as replaced"** (feedback #5.4): added an append-only `service_events` snapshot log;
+   `mark_service_done` records the pre-mark baseline (and coupled oil_filter count), and
+   `undo_last_service` reverses the most recent not-yet-undone mark. Undo restores the **wear
+   baseline** only — a price/spend entry recorded alongside a mark is intentionally not reverted
+   (see KNOWN_ISSUES).
+5. **Mark-as-replaced UX** (feedback #5.1–5.3): a Yes/No confirmation precedes the mark; on Yes a
+   toast shows the part name with an Undo action; on No nothing happens.
+6. **Permission notice** (feedback #4): a location-permission notice is shown on app access when
+   foreground location isn't granted, explaining why and offering to request it.
+7. **Spend details** (feedback #6): the Spent-this-year summary is tappable, opening an itemized
+   list of the year's spend entries. (This partially un-defers the "full Spend-details page" from
+   D-HEALTH-MVP-SCOPE — a read-only itemized list now ships; historical/multi-year browsing is
+   still deferred.)
+
+**Status**: Decided (engineering scope for the demo-feedback round). Genuinely business-critical
+items remain as previously flagged (final metric list, notification channel, brand-data sourcing).
+
+---
+
+## D-DEMO1-CICD — CI/CD via GitHub Actions (not Render)
+
+**Date**: 2026-07-18. Source: user request ("update the CI/CD flow from Render to GitHub Actions").
+
+**Decision**: CI/CD runs on **GitHub Actions** (`.github/workflows/ci.yml` + `deploy.yml`), not a
+Render dashboard auto-deploy. CI runs typecheck, lint, unit tests, and the DB/RLS/RPC suite (with a
+generated-types drift check) on every push/PR. CD deploys from `main` only (Supabase `db push`;
+app via EAS) and is **inert until** repo variable `DEPLOY_ENABLED=true` and the deploy secrets are
+set. Render remains available only as an optional *host* for custom backend services (Rule 5.1);
+when such a service exists it is deployed by this pipeline, not by Render's own hook. FRAMEWORK_RULES
+Rule 5.5 / 7.4 updated accordingly.
+
+**Rationale**: One pipeline (already the home of CI) owning both test and deploy keeps the release
+path in version-controlled workflow files, avoids a separate Render-managed deploy surface, and lets
+deploys gate on green CI.
+
+**Status**: Decided.
+
+---
+
+## D-DEMO2 — Demo-feedback round 002 changes
+
+**Date**: 2026-07-18. Source: `docs/DEMO_FEEDBACK_002.md`.
+
+**Decisions**:
+
+1. **English/Vietnamese switching** (feedback #1, resolves KI-5): a lightweight app-level i18n —
+   `src/i18n.tsx` holds the current `Language` in context (persisted via `expo-secure-store` on
+   native; in-memory fallback on web per KI-1). Each label in `logic/labels.ts` carries its English
+   (`fallback`) and Vietnamese (`vi`) text **inline** (no separate key→translation map, so coverage
+   is enforced at the type level and unit-tested). Components resolve text via a `useT()` hook
+   instead of reading `.fallback`, so switching re-renders immediately. An EN/VI toggle sits on the
+   Health tab; the onboarding language picker is bound to the same app-wide language.
+   - **No i18n library** was added — the app has a small, fixed string set, so an inline two-language
+     map is simpler than pulling in i18next/expo-localization and its config.
+2. **"Last service" checkpoint editor** (feedback #2): the per-part **detail sheet** gains a
+   "Last service (odometer)" field for km-based items — the user sets the odometer value the next
+   service is counted from (e.g. odo 35k, last service 29k → next due at 29k + interval). It's a
+   direct owner-scoped `service_items.last_service_km` write (same pattern as the price update; no
+   RPC needed, Rule 4.5), validated 0..current-odometer in the UI.
+   - **Interpretation note**: the feedback said "edit odometer function," but `last_service` is
+     per-part (it drives each part's next-service), so a single vehicle-level field can't express it
+     coherently. It therefore lives in the per-part detail view, not the vehicle-level edit-odometer
+     modal. Flag if a different placement was intended. Not undoable (see KNOWN_ISSUES KI-8).
+
+**Note on persistence dependency**: language persistence uses the already-present `expo-secure-store`
+rather than adding `@react-native-async-storage/async-storage` — see D-SDK54 for why (adding it
+disturbed the SDK pin).
+
+**Status**: Decided.
+
+---
+
+## D-SDK54 — Pin Expo SDK 54 (target-device requirement)
+
+**Date**: 2026-07-18. Source: user ("my phone cannot use SDK 57 — use SDK 54").
+
+**Decision**: The project is pinned to **Expo SDK 54** (`expo@~54`, `react-native@0.81.5`,
+`react@19.1.0`, `typescript@~5.9`, `eslint-config-expo@~10`, `jest-expo@~54`, SDK-54 `expo-*`
+modules). Do not upgrade to SDK 57+. FRAMEWORK_RULES Rule 0.3 records this as binding.
+
+**Rationale / history**: A target device cannot run SDK 57 builds. During DEMO_FEEDBACK_002,
+`npx expo install @react-native-async-storage/async-storage` moved the project to SDK 54; I first
+misread that as an accident and reverted to 57, but SDK 54 is in fact the required target — so the
+project was moved back to SDK 54 deliberately and pinned. Language persistence uses the SDK-54
+`expo-secure-store` module instead of AsyncStorage, avoiding the extra native dependency whose
+install perturbed the SDK version in the first place. All gates pass on SDK 54 (tsc, eslint,
+79 Jest + 38 Vitest DB tests, web bundle build).
+
+**Status**: Decided.
+
+---
+
+## D-DEMO3 — Demo-feedback round 003: keyboard fix, translations, tabs, and hosted-app roadmap
+
+**Date**: 2026-07-18. Source: `docs/DEMO_FEEDBACK_003.md` + two mid-turn user requests (a
+developer tutorial for iOS access; moving off local-only hosting for "the next version").
+
+**Decisions**:
+
+1. **Keyboard covering modal inputs** (feedback #2, confirmed via `Item_Bug_1.png`): fixed in
+   `service-item-detail-sheet.tsx`, `edit-odometer-modal.tsx`, and `onboarding-screen.tsx` with
+   `KeyboardAvoidingView` (+ an inner `ScrollView` for the detail sheet, whose bottom sheet is tall
+   enough to otherwise get pushed off-screen). Genuine bug, not a scope question — implemented directly.
+2. **Part-name translation** (feedback #1): the Service Reminders cards, the onboarding
+   recently-changed checklist, and the Spend fallback names were all rendering the raw English
+   `service_items.name` / `part_type_defaults.name` from the database regardless of language. Fixed
+   with a `type_key -> Vietnamese name` map (`logic/part-names.ts`) applied at display time —
+   translation stays a frontend concern (Rule 1.3) rather than duplicating localized columns in the
+   extensible `part_type_defaults` catalog (Rule 8.3: custom/user-added parts keep whatever name was
+   entered for them, since there's no translation available). **Caveat**: the 13 Vietnamese terms are
+   drafted by AI, not verified by a native speaker — same caveat as other AI-drafted content in
+   HEALTH_REQ; flag for business-analyst review.
+3. **Persistent "edit vehicle" entry point** (feedback #4): added a tappable vehicle-name button
+   (with a pencil icon) in the Health header, opening an edit sheet for name/brand/unit via a new
+   `useUpdateVehicle` mutation (plain owner-scoped table write, Rule 4.5 — no cross-table invariant,
+   no RPC needed). This is additive to onboarding, not a replacement — I audited `app/index.tsx`'s
+   routing and found no bug: fresh users are correctly routed to `/onboarding` when they have no
+   vehicle. The demo tester most likely used the seeded `rider@example.com` account, which already
+   has a vehicle from `seed.sql` and so never sees onboarding — expected behavior, not a defect. The
+   new header entry point makes bike info reachable regardless of which path a user came in through.
+4. **Tabs restructured** (feedback #5): Touring's placeholder now reads a localized "Feature coming
+   soon" (shared `ComingSoonScreen` component). The 3rd tab ("Tracking") is **renamed to "Lucky
+   Draw"** with the same coming-soon placeholder, per explicit instruction ("this is not a feature of
+   this app"). `app/(tabs)/map-tracking.tsx` was deleted and replaced by `app/(tabs)/lucky-draw.tsx`,
+   which does NOT import from `src/features/map-tracking/` — that feature module is left untouched
+   and simply has no tab pointing to it anymore.
+   - **Flag for business-analyst/product-owner**: MAP_TRACKING is one of the KB's three core
+     functions (KB §4). This change removes its only navigation entry point in favor of a
+     non-business placeholder tab. I implemented it as instructed (the message came directly from the
+     real stakeholder, not a simulated one, so Rule 8.2's "don't guess business behavior" doesn't
+     block acting on it) — but the KB itself has not been updated to reflect MAP_TRACKING's
+     deprioritization or wherever it's meant to resurface in navigation (a 4th tab? merged into
+     Touring? a future replacement of "Lucky Draw" once GPS tracking is built?). That reconciliation
+     is still open.
+5. **"App re-downloads every time" (feedback #3) + "host it online, no local port" (mid-turn
+   request)**: same root cause — the app currently runs against a **local** Supabase stack and an
+   Expo Go **tunnel** dev server, both of which must be started fresh each session and both of which
+   require Expo Go to re-fetch the JS bundle on every cold open. The actual fix is not a code change
+   inside this repo; it's an operational move to (a) a **hosted Supabase project** instead of local
+   Docker, and (b) a **real installed app** (via EAS Build, distributed through TestFlight for iOS)
+   instead of Expo Go. Both are documented step-by-step in `docs/GUIDELINE.md` §8, and the
+   groundwork is committed now: `eas.json` (development/preview/production build profiles),
+   `ios.bundleIdentifier` / `android.package` placeholders in `app.json` (`com.motocompanion.app` —
+   change before your first App Store Connect upload, since it can't change after), and a
+   `.env.example` note on swapping to hosted Supabase values.
+   - **Why not fully executed**: creating a Supabase cloud project, an Expo/EAS account, and (for
+     iOS) an Apple Developer Program membership ($99/yr) all require the user's own accounts,
+     payment, and identity — an AI agent cannot create or hold these. This is accurately scoped as
+     "config + documentation now, execution next" rather than claiming a fix that doesn't exist yet.
+
+**Status**: Decided (engineering scope for the demo-feedback round). Item 4's flag (MAP_TRACKING's
+nav placement) and item 2's translation-accuracy caveat are open items for business-analyst /
+product-owner, not blocking. Item 5's hosted-app move is documented but requires the user to
+execute the account-creation steps in GUIDELINE.md §8 themselves (or with my help interactively,
+once they have the accounts).

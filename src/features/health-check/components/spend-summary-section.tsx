@@ -1,10 +1,15 @@
-import { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useLanguage, type Language } from '@/i18n';
+
+import { useT } from '../i18n';
 import { currentYearEntries, spendTotalCents, topNSpend } from '../logic/spend';
-import { HEALTH_LABELS } from '../logic/labels';
+import { HEALTH_LABELS, resolveLabel } from '../logic/labels';
+import { resolvePartName } from '../logic/part-names';
 import type { SpendEntryRow } from '../types';
 import { AsyncState } from './async-state';
+import { SpendDetailsSheet } from './spend-details-sheet';
 import { COLORS, RADIUS, SPACING } from './theme';
 
 interface SpendSummarySectionProps {
@@ -26,45 +31,70 @@ function humanizePartTypeKey(key: string): string {
     .join(' ');
 }
 
-function displayName(entry: SpendEntryRow): string {
+/** Best-available label for a spend entry: the user's note, else the (translated) part name, else
+ * a generic "Parts"/"Service" word (DEMO_FEEDBACK_003 #1). */
+export function displayName(entry: SpendEntryRow, language: Language): string {
   if (entry.note && entry.note.trim() !== '') return entry.note;
-  if (entry.part_type_key) return humanizePartTypeKey(entry.part_type_key);
-  return entry.kind === 'service' ? 'Service' : 'Parts';
+  if (entry.part_type_key) {
+    return resolvePartName(entry.part_type_key, humanizePartTypeKey(entry.part_type_key), language);
+  }
+  return resolveLabel(
+    entry.kind === 'service' ? HEALTH_LABELS.spend.kindService : HEALTH_LABELS.spend.kindParts,
+    language
+  );
 }
 
 /** Spent this year — secondary Health section (HEALTH_REQ §7, D-OQ-H5-SPEND-YEAR). Only the
  * on-tab total + top-3 ship in MVP; the full itemized Spend-details page is deferred
  * (D-HEALTH-MVP-SCOPE). */
 export function SpendSummarySection({ entries, isLoading, isError, onRetry, now }: SpendSummarySectionProps) {
+  const t = useT();
+  const { language } = useLanguage();
+  const [showDetails, setShowDetails] = useState(false);
   const thisYear = useMemo(() => currentYearEntries(entries ?? [], now), [entries, now]);
   const totalCents = useMemo(() => spendTotalCents(thisYear), [thisYear]);
   const top3 = useMemo(() => topNSpend(thisYear, 3), [thisYear]);
 
   return (
     <View style={styles.section}>
-      <Text style={styles.title}>{HEALTH_LABELS.spend.title.fallback}</Text>
+      <Text style={styles.title}>{t(HEALTH_LABELS.spend.title)}</Text>
       <AsyncState
         isLoading={isLoading}
         isError={isError}
-        errorMessage={HEALTH_LABELS.spend.error.fallback}
+        errorMessage={t(HEALTH_LABELS.spend.error)}
         onRetry={onRetry}
         isEmpty={thisYear.length === 0}
-        emptyMessage={HEALTH_LABELS.spend.empty.fallback}
+        emptyMessage={t(HEALTH_LABELS.spend.empty)}
       >
-        <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>{HEALTH_LABELS.spend.total.fallback}</Text>
-          <Text style={styles.totalValue}>{formatCents(totalCents)}</Text>
-        </View>
-        <View style={styles.topList}>
-          <Text style={styles.topListLabel}>{HEALTH_LABELS.spend.topItems.fallback}</Text>
-          {top3.map((entry) => (
-            <View key={entry.id} style={styles.topItemRow}>
-              <Text style={styles.topItemName}>{displayName(entry)}</Text>
-              <Text style={styles.topItemAmount}>{formatCents(entry.amount_cents)}</Text>
-            </View>
-          ))}
-        </View>
+        {/* DEMO_FEEDBACK_001 #6: the summary is tappable to open the full itemized details. */}
+        <Pressable
+          onPress={() => setShowDetails(true)}
+          accessibilityRole="button"
+          accessibilityLabel={t(HEALTH_LABELS.spend.viewDetails)}
+        >
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>{t(HEALTH_LABELS.spend.total)}</Text>
+            <Text style={styles.totalValue}>{formatCents(totalCents)}</Text>
+          </View>
+          <View style={styles.topList}>
+            <Text style={styles.topListLabel}>{t(HEALTH_LABELS.spend.topItems)}</Text>
+            {top3.map((entry) => (
+              <View key={entry.id} style={styles.topItemRow}>
+                <Text style={styles.topItemName}>{displayName(entry, language)}</Text>
+                <Text style={styles.topItemAmount}>{formatCents(entry.amount_cents)}</Text>
+              </View>
+            ))}
+          </View>
+          <Text style={styles.viewDetails}>{t(HEALTH_LABELS.spend.viewDetails)} ›</Text>
+        </Pressable>
       </AsyncState>
+
+      <SpendDetailsSheet
+        visible={showDetails}
+        entries={thisYear}
+        totalCents={totalCents}
+        onClose={() => setShowDetails(false)}
+      />
     </View>
   );
 }
@@ -118,6 +148,12 @@ const styles = StyleSheet.create({
   topItemAmount: {
     color: COLORS.inkMuted,
     fontSize: 13,
+    fontWeight: '600',
+  },
+  viewDetails: {
+    marginTop: SPACING.sm,
+    color: COLORS.accent,
+    fontSize: 12,
     fontWeight: '600',
   },
 });

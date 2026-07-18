@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { useT } from '../i18n';
 import { HEALTH_LABELS } from '../logic/labels';
 import { formatDistance, type DistanceUnit } from '../logic/units';
 import { AsyncState } from './async-state';
@@ -26,19 +27,20 @@ export function LiveVitalsSection({
   onRetry,
   unit,
 }: LiveVitalsSectionProps) {
+  const t = useT();
   return (
     <View style={styles.section}>
-      <Text style={styles.title}>{HEALTH_LABELS.liveVitals.title.fallback}</Text>
+      <Text style={styles.title}>{t(HEALTH_LABELS.liveVitals.title)}</Text>
       <AsyncState isLoading={isLoading} isError={isError} onRetry={onRetry} isEmpty={false}>
         <View style={styles.row}>
-          <StatTile label={HEALTH_LABELS.liveVitals.odometer.fallback} value={formatDistance(currentOdometerKm, unit)} />
+          <StatTile label={t(HEALTH_LABELS.liveVitals.odometer)} value={formatDistance(currentOdometerKm, unit)} />
           <StatTile
-            label={HEALTH_LABELS.liveVitals.todaysDistance.fallback}
+            label={t(HEALTH_LABELS.liveVitals.todaysDistance)}
             value={formatDistance(todaysDistanceKm ?? 0, unit)}
           />
         </View>
       </AsyncState>
-      <Text style={styles.note}>{HEALTH_LABELS.liveVitals.gpsComingSoon.fallback}</Text>
+      <Text style={styles.note}>{t(HEALTH_LABELS.liveVitals.gpsComingSoon)}</Text>
     </View>
   );
 }
