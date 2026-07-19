@@ -18,7 +18,8 @@
 | Language | **TypeScript** (strict mode) | Everywhere: app, backend, scripts, tests |
 | Mobile app | **Expo SDK 54** (React Native 0.81, Expo Router) | iOS + Android from one codebase. SDK **pinned** — see Rule 0.3 |
 | Backend & DB | **Supabase** | Postgres, Auth, Realtime, Storage, Edge Functions |
-| Server hosting | **Render** | For any custom Node/API services & cron jobs that don't fit Supabase Edge Functions |
+| CI/CD | **GitHub Actions** | `.github/workflows/` — typecheck/lint/tests on every push, deploy from `main`. See Rule 5.5/7.4 |
+| Server hosting *(optional, not currently used)* | **Render** | Only if a custom Node/API service becomes necessary beyond what Supabase covers natively — see Rule 0.2/5.1 |
 
 **Rule 0.1** — Do NOT introduce alternative frameworks (e.g., Firebase, Prisma+own Postgres, bare
 React Native CLI, AWS Lambda) without an explicit decision from the product-owner recorded in
@@ -44,11 +45,14 @@ Expo modules over adding new native deps (e.g. language persistence uses `expo-s
 
 ```
 /app                    # Expo app (Expo Router file-based routes)
-  /(tabs)/              # Main tab navigation: health-check, touring-plan, map-tracking
+  /(tabs)/              # Main tab navigation: home, health-check, touring-plan, lucky-draw
   /(auth)/              # Sign-in / sign-up screens
 /src
   /components/          # Reusable UI components (dumb/presentational)
+  /theme.ts             # Shared app palette ("Night Garage")
+  /i18n.tsx             # Shared Language context + label-resolution utility
   /features/            # Feature modules — one folder per business function
+    /home/
     /health-check/
     /touring-plan/
     /map-tracking/
@@ -59,9 +63,10 @@ Expo modules over adding new native deps (e.g. language persistence uses `expo-s
   /migrations/          # SQL migrations (source of truth for schema)
   /functions/           # Edge Functions (Deno/TS)
   /seed.sql             # Local dev seed data
-/server                 # Render-hosted services (only if/when needed)
+/server                 # Render-hosted services (only if/when needed — currently unused)
 /docs                   # KB, this file, decisions, design docs
-/design                 # Design references — mockups & prototypes (read-only for engineers)
+/design                 # Design references — mockups, prototypes, reference images (read-only)
+/.github/workflows      # CI/CD (GitHub Actions)
 ```
 
 **Rule 1.1** — Feature code lives in `src/features/<feature>/`. Each feature folder owns its
@@ -69,7 +74,14 @@ screens' logic, hooks, API calls, and feature-specific components. Route files i
 they import from features and render.
 
 **Rule 1.2** — Cross-feature imports go through each feature's `index.ts` (its public API). Never
-deep-import another feature's internals.
+deep-import another feature's internals — **except** a pure, side-effect-free `logic/` module
+(Rule 1.3) may be deep-imported directly (e.g. `@/features/health-check/logic/status`) when
+re-exporting it from `index.ts` would force consumers to also transitively load that feature's
+screens/components (and their native dependencies) just to reach dependency-free functions. This
+carve-out exists because barrel-file imports evaluate the entire module top-to-bottom regardless of
+which named export is used — a pure-logic-only consumer otherwise breaks in any environment (Jest,
+etc.) where the unrelated screen's native deps (e.g. `expo-font` via `@expo/vector-icons`) can't
+resolve. See D-HOME-DEEP-IMPORT for the incident that surfaced this.
 
 **Rule 1.3** — Business logic (e.g., maintenance status computation) must be written as **pure
 TypeScript functions** in the feature folder, independent of React and Supabase, so it is unit-testable.
@@ -188,7 +200,8 @@ its input with zod and returns typed JSON errors (`{ error: { code, message } }`
 
 **Rule 4.7** — Local development runs against `npx supabase start` (local stack), never against the
 production project. `supabase/seed.sql` must contain enough data to exercise all three features
-(a user, a vehicle, metrics in `ok`/`warning`/`overdue` states, one planned trip, one recorded trip).
+(a user, a vehicle, metrics in `fresh`/`due_soon`/`replace`/`overdue` states, one planned trip, one
+recorded trip).
 
 **Rule 4.8** — Environments: separate Supabase projects for `dev`/`staging` and `production`. Config
 via env vars only — no hardcoded project URLs or keys in code.

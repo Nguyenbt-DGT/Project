@@ -9,7 +9,8 @@ import { COLORS } from '@/theme';
 
 /**
  * Entry router: signed-out -> dev sign-in; signed-in with no vehicle yet -> onboarding
- * (GLOBAL_REQ §2 / DEMO_FEEDBACK_001 #2); signed-in with a vehicle -> the Health tab.
+ * (GLOBAL_REQ §2 / DEMO_FEEDBACK_001 #2); signed-in with a vehicle -> the Home tab
+ * (HOME_REQ.md §1 — "When user login into the application, Home page is displayed").
  */
 export default function Index() {
   const [hasSession, setHasSession] = useState<boolean | null>(null);
@@ -37,7 +38,7 @@ export default function Index() {
   if (hasSession === null) return loading;
   if (!hasSession) return <Redirect href="/(auth)/sign-in" />;
   if (vehicleQuery.isLoading) return loading;
-  return <Redirect href={vehicleQuery.data ? '/(tabs)/health-check' : '/onboarding'} />;
+  return <Redirect href={vehicleQuery.data ? '/(tabs)/home' : '/onboarding'} />;
 }
 
 const styles = {

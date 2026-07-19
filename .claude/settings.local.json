@@ -3,7 +3,9 @@
     "allow": [
       "Skill(artifact-design)",
       "Skill(dataviz)",
-      "Artifact"
+      "Artifact",
+      "Bash(awk '{print $NF}')",
+      "Bash(grep -v '^\\\\.$\\\\|^\\\\.\\\\.$')"
     ]
   }
 }

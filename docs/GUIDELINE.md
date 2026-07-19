@@ -11,12 +11,12 @@
 
 | # | Document | What it gives you |
 |---|---|---|
-| 1 | [README.md](../README.md) | Application overview: the three functions and how they connect |
+| 1 | [README.md](../README.md) | Application overview: the four functions and how they connect |
 | 2 | [moto-app-knowledge-base-en.md](moto-app-knowledge-base-en.md) | The "KB" — business requirements, rules, and OPEN questions |
 | 3 | [FRAMEWORK_RULES.md](FRAMEWORK_RULES.md) | Binding technical rules (stack, structure, testing, conduct) |
 | 4 | This file | Setup & workflow |
 | 5 | [DECISIONS.md](DECISIONS.md) | Decision log — resolved open questions, MVP scope; check before changing direction |
-| 6 | [HEALTH_REQ.md](HEALTH_REQ.md) · [GLOBAL_REQ.md](GLOBAL_REQ.md) | Feature & global requirements (Health tab; auth/onboarding/units/language) |
+| 6 | [HEALTH_REQ.md](HEALTH_REQ.md) · [HOME_REQ.md](HOME_REQ.md) · [GLOBAL_REQ.md](GLOBAL_REQ.md) | Feature & global requirements (Health tab; Home tab; auth/onboarding/units/language) |
 | 7 | [HEALTH_ACCEPTANCE.md](HEALTH_ACCEPTANCE.md) | Given/When/Then acceptance criteria the tests are written against |
 | 8 | [KNOWN_ISSUES.md](KNOWN_ISSUES.md) | Known limitations & follow-ups |
 | 9 | [KICKOFF_NOTES.md](KICKOFF_NOTES.md) | Vision/ideas — NOT in scope unless product-owner prioritizes |
@@ -25,8 +25,9 @@
 
 ## 2. First-time setup
 
-Prerequisites: Node.js LTS, Docker (for local Supabase), and for device testing the Expo Go app
-or a simulator.
+Prerequisites: **Node.js 22+** (required — `@supabase/supabase-js`'s realtime client needs a
+native `WebSocket` global, unavailable before Node 22), Docker (for local Supabase), and for device
+testing the Expo Go app or a simulator.
 
 ```bash
 npm install                 # 1. dependencies
@@ -173,6 +174,10 @@ Full rules in FRAMEWORK_RULES §6. In short:
   to **54** (Rule 0.3, D-SDK54). After any dependency change, `git diff package.json` and revert
   unintended expo/react-native/typescript churn (pin back + `rm -rf node_modules package-lock.json
   && npm install`). Prefer already-installed SDK-54 Expo modules over adding new native deps.
+- **`npm run test:db` needs Node 22+.** On Node 20, `@supabase/supabase-js` throws "Node.js detected
+  but native WebSocket not found" the moment a client is created (it initializes a realtime client
+  even for plain REST/RPC calls). CI's `database` job and this prerequisite are both pinned to
+  Node 22 — don't downgrade either without checking supabase-js's runtime requirements first.
 
 ---
 

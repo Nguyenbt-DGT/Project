@@ -59,7 +59,11 @@ export function PermissionNotice() {
           <Pressable style={styles.grant} onPress={() => void request()} accessibilityRole="button">
             <Text style={styles.grantText}>{t(HEALTH_LABELS.permission.grant)}</Text>
           </Pressable>
-          <Pressable style={styles.dismiss} onPress={() => setDismissed(true)} accessibilityRole="button">
+          <Pressable
+            style={styles.dismiss}
+            onPress={() => setDismissed(true)}
+            accessibilityRole="button"
+          >
             <Text style={styles.dismissText}>{t(HEALTH_LABELS.permission.dismiss)}</Text>
           </Pressable>
         </View>

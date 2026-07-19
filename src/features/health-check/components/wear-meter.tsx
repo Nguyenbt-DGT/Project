@@ -20,7 +20,9 @@ export function WearMeter({ status, progressClamped }: WearMeterProps) {
       accessibilityRole="progressbar"
       accessibilityValue={{ min: 0, max: 100, now: Math.round(progressClamped * 100) }}
     >
-      <View style={[styles.fill, { width: widthPercent, backgroundColor: STATUS_COLORS[status] }]} />
+      <View
+        style={[styles.fill, { width: widthPercent, backgroundColor: STATUS_COLORS[status] }]}
+      />
     </View>
   );
 }

@@ -541,3 +541,366 @@ nav placement) and item 2's translation-accuracy caveat are open items for busin
 product-owner, not blocking. Item 5's hosted-app move is documented but requires the user to
 execute the account-creation steps in GUIDELINE.md §8 themselves (or with my help interactively,
 once they have the accounts).
+
+---
+
+## D-CI-NODE22 — CI requires Node 22+ (not 20)
+
+**Date**: 2026-07-19. Source: user-reported CI failure (screenshot of a failed GitHub Actions run).
+
+**Decision**: Both CI jobs (`quality`, `database` in `.github/workflows/ci.yml`) and the commented
+EAS-build job in `deploy.yml` are pinned to **Node 22**, not 20.
+
+**Rationale**: `@supabase/supabase-js` initializes a realtime client (even for plain REST/RPC
+calls), which requires a native `WebSocket` global — available in Node from v22 onward, not v20.
+The `database` job's Vitest suite failed every test with "Node.js detected but native WebSocket not
+found" as soon as any test called `createClient(...)`. Local development had never hit this because
+this environment already runs Node 24; CI was the only place still on 20. Bumped `quality` to 22 as
+well to avoid future drift between the two jobs.
+
+**Status**: Decided.
+
+---
+
+## D-HOME-DEEP-IMPORT — Rule 1.2 carve-out for pure `logic/` modules
+
+**Date**: 2026-07-19. Source: build-time discovery while wiring the new `home` feature to reuse
+health-check's wear-status math.
+
+**Decision**: FRAMEWORK_RULES Rule 1.2 now permits deep-importing a feature's pure, side-effect-free
+`logic/` module directly (e.g. `@/features/health-check/logic/status`), instead of requiring
+everything to go through that feature's `index.ts` barrel.
+
+**Rationale**: `home`'s health-score logic needs the exact same wear-status math the Health tab
+uses (`axisResultsForItem`, `worstAxisResult`, etc.) — reusing it, not reimplementing it, so the two
+tabs can never disagree about a part's status. Re-exporting those functions from
+`health-check/index.ts` seemed like the "proper" Rule-1.2-compliant path, but barrel-file imports
+evaluate the ENTIRE module top-to-bottom regardless of which export is used — since that index.ts
+also exports `HealthCheckScreen`, any consumer (including a plain Jest test for pure logic) was
+forced to transitively load React Native screen code and its native `expo-font`/`@expo/vector-icons`
+dependency chain, which fails to resolve outside the app runtime. `health-score.test.ts` reproduced
+this exactly: it failed with a module-resolution error despite never touching React itself.
+
+**Status**: Decided.
+
+---
+
+## D-DEMO4 — Demo-feedback round 004 changes
+
+**Date**: 2026-07-19. Source: `docs/DEMO_FEEDBACK_004.md` + `docs/HOME_REQ.md`.
+
+**Decisions**:
+
+1. **Language-aware currency** (feedback #1): a new `logic/currency.ts` formats amounts as USD in
+   English and VND in Vietnamese, converting via a fixed placeholder rate — see
+   `D-DEMO4-CURRENCY` below. Canonical storage stays USD cents everywhere (no schema change),
+   matching the existing "one canonical unit, convert at the edges" pattern already used for
+   distance (`D-UNIT-ROUNDING`). Applied to every amount display (Spend summary/details, Service
+   Reminders running total, part detail price) and to price *input* parsing (mark-as-replaced,
+   the new direct price editor) — a Vietnamese-language user types VND, not USD.
+2. **Spend items not translating** (feedback #2) — root-caused, not a stale-cache issue: every
+   seeded/typical spend entry has an English `note` (e.g. "Chain replacement"), and `displayName()`
+   checked `note` *before* the translatable part name, so the translated path never actually ran.
+   Fixed by reordering: a recognized `part_type_key` (translatable) now takes priority; the note is
+   shown as a secondary caption in the details sheet when it exists alongside a part name, so no
+   information is lost.
+3. **Editable interval/last-service/price in the Part Details popup** (feedback #3): added a
+   general-purpose `useUpdateServiceItem` mutation (supersedes the narrower `useSetLastServiceKm`)
+   and inline "Edit interval" / "Edit last service" (now covering all three axes — km, days-ago,
+   event-count, not just km) / "Edit price" rows in the detail sheet. These edits deliberately do
+   **not** close the sheet (unlike mark-as-replaced), since a user may want to fix several fields
+   in one visit. Editing price here is a direct correction to `service_items.price_cents` and does
+   **not** create a new `spend_entries` row — that stays tied to the mark-as-replaced flow only, to
+   avoid double-counting spend.
+4. **HOME tab** (feedback #4, `HOME_REQ.md`): new leftmost tab, shown immediately after
+   login/onboarding instead of the Health tab. A `home` feature was added following the same
+   structure as `health-check` (Rule 1.1). Key implementation choices:
+   - **Vehicle hero card** (§3.1): tapping the photo area picks/uploads a new photo (via
+     `expo-image-picker` + a new `vehicle-photos` Supabase Storage bucket, owner-scoped RLS —
+     migration `20260719080000_home_vehicle_photo.sql`, verified live); tapping the rest of the
+     card opens a read-only details popup. The eyebrow text becomes the real app name; the circular
+     badge becomes the bike's name, per §3.1.2/§3.1.3.
+   - **Merged stats/health card** (§4): the mockup's separate Total-Distance and Bike-Health cards
+     become one tappable card that navigates to the Health tab. "This month" sums recorded trips in
+     the current calendar month (new `useMonthDistanceKm`, same shape as health-check's existing
+     `useTodaysDistanceKm`). See `D-HOME-HEALTH-SCORE` for the score formula and status-message
+     wording, both explicitly left to us by HOME_REQ.
+   - **Scope note**: the full Home.png mockup also shows a red "part overdue" alert card and
+     "Plan a Ride"/"Lucky Draw" CTA buttons, neither of which HOME_REQ's numbered requirements ask
+     for. Deliberately not built (Rule 8.2 — don't add unrequested scope even when a reference
+     mockup shows it); flagged as an open enhancement for product-owner in `KNOWN_ISSUES`.
+   - **"Last ride" caption depends on MAP_TRACKING data that doesn't exist yet**: with no ride-
+     recording feature built, the `trips` table has no real rows for actual users (only seed
+     fixtures), so the hero card will show "No rides recorded yet" for every real user until
+     MAP_TRACKING ships. This is expected, not a bug — flagged in KNOWN_ISSUES for visibility.
+
+**Status**: Decided (engineering scope for the demo-feedback round). See `D-DEMO4-CURRENCY` and
+`D-HOME-HEALTH-SCORE` immediately below for the two judgment calls this round required.
+
+---
+
+## D-DEMO4-CURRENCY — Placeholder USD→VND rate (not a live FX rate)
+
+**Date**: 2026-07-19. Source: DEMO_FEEDBACK_004 #1.
+
+**Decision**: `logic/currency.ts` uses a fixed, illustrative rate of **1 USD ≈ 25,000 VND** to
+convert canonical USD-cent storage into a Vietnamese-language display (and to parse VND input back
+into cents). This is **not** a live/authoritative foreign-exchange rate.
+
+**Rationale**: A real exchange rate requires a genuine product/business decision (which FX data
+provider, how often it refreshes, whether a rate is locked at the moment of a transaction vs. always
+using "today's" rate) — none of that exists yet, and inventing it would be guessing a business
+behavior (Rule 8.2). A fixed, clearly-documented placeholder unblocks the feature (users see
+sensible VND amounts, VND input round-trips correctly) while being honest that it's illustrative.
+Flagged in `KNOWN_ISSUES` for product-owner/business-analyst to replace with a real rate source
+before this ships to real Vietnamese users handling real money.
+
+**Status**: Decided (interim). Real FX sourcing: pending stakeholder decision.
+
+---
+
+## D-HOME-HEALTH-SCORE — Bike-health score formula, status messages, and ring simplification
+
+**Date**: 2026-07-19. Source: HOME_REQ.md §4.2 ("Displays the Average of the Bike's health... The
+content of each status I let you decide").
+
+**Decision**:
+1. **Score formula**: `home/logic/health-score.ts` averages every tracked item's *clamped* progress
+   (0–100%, the same clamping the Health tab's wear meters already use) and inverts it into a 0–100
+   "freshness" score (`100` = everything just serviced, `0` = everything maximally overdue). Items
+   with no configured axis are excluded from the average (never treated as 0% or counted as a
+   phantom entry). An empty item list scores 100/fresh.
+2. **Status (color)**: the **worst** individual item's status, never averaged/diluted — mirrors the
+   existing dual-axis "worst wins" rule (`D-OQ-H3-TIME-DUAL-AXIS`) so one badly neglected part can't
+   be hidden behind several fresh ones.
+3. **Status messages** (four, EN+VI): "Running strong — nothing needs attention" (fresh) / "Mostly
+   good — keep an eye on upcoming service" (due_soon) / "Running strong — one thing needs your
+   wrench" (replace, matching the mockup's own wording) / "Needs attention — something is overdue
+   for service" (overdue).
+4. **Ring → flat circle → true ring (superseded)**: originally implemented as a flat colored circle
+   to avoid adding `react-native-svg` as a new dependency. **Reversed in DEMO_FEEDBACK_005** — the
+   user explicitly asked for the real progress ring ("only the process chart has color"), so
+   `react-native-svg@~15.12.1` (confirmed Expo-54-compatible) was added and `HealthRing`
+   (`src/features/home/components/health-ring.tsx`) now draws a true SVG arc: a faint full-circle
+   track + a colored arc sized to `score/100`, starting at 12 o'clock. Only the arc carries the
+   status color — the center background and score text stay neutral, matching the reference image.
+
+**Status**: Decided (reasonable default per HOME_REQ's explicit delegation for the formula/wording).
+The ring-vs-circle question is now resolved in favor of the true ring.
+
+---
+
+## D-DEMO5 — Demo-feedback round 005 + mid-turn requests (engineering scope)
+
+**Date**: 2026-07-19. Source: `docs/feedbacks/DEMO_FEEDBACK_005.md` plus three mid-turn requests
+(the health-score ring reversal, above; brand/name dropdowns; this summary).
+
+**Decisions**:
+
+1. **Photo not showing after upload (feedback #1) — root-caused, fixed.** The original upload path
+   read the picked file via `fetch(localUri).blob()`, which is unreliable for local `file://` URIs
+   across React Native environments — the upload call could resolve without error while writing an
+   empty/corrupt Storage object, so nothing ever rendered. Fixed by switching to `expo-file-system`'s
+   modern `File` class (`file.bytes()` for the raw bytes, `file.size` for a size check) — a
+   native-module-backed read, not a fetch-polyfill one. The bucket's existing 10 MB limit
+   (`file_size_limit` in the storage migration) is now **also enforced client-side** with a clear
+   `PhotoTooLargeError`, so an oversized photo fails fast with a specific message instead of a
+   silent/generic upload failure.
+2. **Bike-name mismatch between Home and Health (feedback #6) — hardened, not strictly
+   root-caused.** Both screens read the exact same TanStack Query cache entry
+   (`VEHICLE_QUERY_KEY`), and `useUpdateVehicle` already invalidates it on save, so the two tabs
+   *should* agree under React Query's own defaults. Rather than rely on that theoretical guarantee,
+   `HomeScreen` now explicitly invalidates the vehicle and service-items queries on every
+   `useFocusEffect` (screen focus) — cheap, and removes any doubt about mount/staleness timing
+   specific to how Expo Router's tab navigator keeps screens alive.
+3. **Cross-tab profile entry point (feedback #5)**: a header button on the shared
+   `app/(tabs)/_layout.tsx` `screenOptions` (so it appears on every tab without per-screen wiring),
+   opening a popup with the signed-in email and a sign-out action. Sign-out clears the entire React
+   Query cache (`queryClient.clear()`) and explicitly navigates to `/(auth)/sign-in` — it does not
+   rely solely on `app/index.tsx`'s auth-state listener, since that component may not be mounted
+   when sign-out happens from deep inside a tab. Profile *editing* needs a real user-data model; the
+   Turso migration that would have bundled this is declined (`D-DEMO5-TURSO`), so this stays
+   read-only for now (GLOBAL_REQ §4) pending a Supabase-backed `profiles` table.
+4. **Overdue-parts warning list (feedback #7)**: a new `computeOverdueParts` pure function
+   (deep-imports health-check's `logic/status`, `logic/labels`, `logic/part-names` — the same Rule
+   1.2 carve-out `health-score.ts` already uses) lists every item whose status is `overdue`, worst
+   first, reusing the exact "Overdue {value} — replace/repair as soon as possible" copy already
+   shown on the Health tab (no second copy of the same message to drift). Hidden entirely when
+   nothing is overdue. Scrolls internally past 3 rows rather than growing the page.
+5. **Touring / Lucky Draw nav cards (feedback #8)**: two cards navigating to their respective tabs,
+   matching `Home-5th-session.png`. Both destinations are still "Feature coming soon" placeholders
+   (`D-DEMO3`) — this only adds the navigation shortcut, not the underlying features.
+6. **Brand/name dropdowns in the vehicle editor** (mid-turn: "since we have database now, brand and
+   name should be dropdowns"): the Health tab's Edit Vehicle modal's Brand and Name fields are now
+   cascading dropdowns sourced from `bike_catalog` (the same small curated table from `D-OQ-H4`),
+   with a free-text "Other" fallback — the catalog only has 4 rows, so a strict dropdown-only field
+   would trap any user whose bike isn't one of them. This does **not** yet wire a selected catalog
+   bike into `bike_part_intervals` overrides (HEALTH_REQ §6.1 tracks that gap explicitly) — today
+   it only sets `vehicles.brand`/`vehicles.name`.
+7. **Health-score ring reversal**: see the amended note in `D-HOME-HEALTH-SCORE` above.
+
+**Status**: Decided (engineering scope for this round). Item #2 of the original feedback (database
+migration to Turso) was reviewed and then **declined — Supabase stays**; items #3–#4 (custom
+Login/Logout/Register, user-data handling) remain open, now scoped against Supabase instead. See
+`D-DEMO5-TURSO`.
+
+---
+
+## D-DEMO5-TURSO — Declined: Supabase → Turso migration (staying on Supabase)
+
+**Date**: 2026-07-19, reversed 2026-07-18[^note]. Source: DEMO_FEEDBACK_005 #2–#4 ("I think we
+should change the database provider from supabase to Turso... we need to implement
+Login-Logout-Register... we will handle the user's data in the database"). The user paused this
+migration to review the architectural implications, and after seeing the analysis below
+**explicitly decided to keep Supabase** ("Please keep the supabase") rather than proceed. Nothing
+in this entry was ever built — it is kept as a record of the analysis and the decision it led to,
+so the same migration isn't re-proposed without re-deriving why it was declined.
+
+[^note]: Dates as given in-session; the reversal message arrived shortly after the pause.
+
+**Outcome**: Feedback item #2 (change database provider to Turso) is **declined**. Supabase remains
+the database, Auth, and Storage provider for this app — no Turso, no custom backend API, no
+Render service, no Cloudflare R2. The four "architecture decisions" recorded below never take
+effect; they're kept for context only, in case a similar migration is proposed again later.
+Items #3–#4 (Login/Logout/Register, user-data handling) are **not** cancelled by this — they were
+only *bundled* with the Turso move in the original feedback, not dependent on it. Whether/how to
+build them against Supabase instead is tracked separately (see the "Next" note at the end of this
+entry).
+
+**Why this isn't a small change**: Supabase today provides four things this app depends on, not
+just "a database" — Postgres (schema, RLS, RPCs), Auth (Gmail/email sessions), Storage (the
+vehicle-photos bucket), and a client library safe to call directly from the mobile app because RLS
+enforces per-row authorization at the database layer. Turso is a hosted **libSQL/SQLite-compatible
+database only** — no RLS-equivalent row-security model, no built-in Auth, no file storage. Moving
+the data there is not a connection-string swap; it changes the whole security model:
+
+- **No RLS-equivalent** → a mobile client cannot safely hold a Turso auth token with unrestricted
+  table access the way it safely holds a Supabase anon key today. This effectively **requires a
+  custom backend API** between the app and Turso (e.g., on Render — already an available option
+  per Rule 0.2/5.1) that owns authorization, which the client calls over HTTPS instead of talking to
+  the database directly.
+- **No built-in Auth** → explains DEMO_FEEDBACK_005 #3 ("we need to implement Login-Logout-Register
+  ourselves"). This means designing session handling from scratch (password hashing, session
+  tokens/JWTs, refresh, "remember me") — a real architecture decision, not a library swap.
+- **No Storage** → the vehicle-photo feature (`D-DEMO5` #1, just fixed) needs a different home for
+  uploaded files — Turso doesn't store blobs. Options: keep Supabase Storage as a standalone service
+  even if Postgres data moves to Turso, or adopt a separate object-storage provider (Cloudflare R2,
+  S3, Vercel Blob, etc.).
+- **Schema dialect**: existing migrations use Postgres-specific features (RLS policies, `gen_random_uuid()`,
+  Postgres functions/triggers for `mark_service_done`/`apply_trip_distance`/etc.) that don't
+  translate directly to SQLite/libSQL — every migration and RPC would need rewriting, not just
+  re-pointing.
+
+**Architecture decisions (made 2026-07-19, via AskUserQuestion)**:
+
+1. **Scope: full replacement.** Data, auth, and file storage all move off Supabase — not the
+   hybrid "Turso for app data only, keep Supabase Auth/Storage" option, which would have been lower
+   risk/rework. This is the user's explicit choice, not a default.
+2. **Auth mechanism: custom email/password.** Bcrypt-hashed passwords in a new Turso `users` table;
+   JWT session tokens with refresh; "remember me" semantics handled by the new backend API. This
+   supersedes GLOBAL_REQ §1's Gmail-OAuth business requirement for the time being — whether Gmail
+   sign-in is layered on top of this later, or replaced by it, is not yet decided; flag to
+   product-owner/business-analyst once this bundle is actually built.
+3. **Backend hosting: Render.** Already an approved fallback per FRAMEWORK_RULES Rule 0.2/5.1 — no
+   new hosting-provider decision needed. This is the first feature that actually triggers Rule 5.1's
+   "only if/when needed" condition; `/server` moves from dormant to active.
+4. **Photo storage: Cloudflare R2.** S3-compatible API (existing AWS S3 SDKs work unmodified against
+   it), no egress fees, generous free tier. Replaces the Supabase Storage `vehicle-photos` bucket
+   (migration `20260719080000_home_vehicle_photo.sql`) once this bundle is built.
+
+**What's still needed to resume**:
+1. The Turso database URL and auth token — retrieval steps given directly to the user in chat, per
+   their request (not duplicated here since credentials don't belong in a committed doc).
+2. Cloudflare R2 credentials (account ID, access key ID/secret, bucket name) — needed once the
+   photo-storage piece of this bundle is actually reached, not immediately.
+3. A rewrite of every migration/RPC from Postgres dialect (RLS policies, `gen_random_uuid()`,
+   Postgres functions/triggers) to SQLite/libSQL — Turso has no equivalent of any of these.
+4. Design of the new Render backend API's route surface (what the mobile app calls instead of
+   talking to a database directly) and the JWT session contract (issuance, refresh, storage on
+   the client — still `expo-secure-store`, that part is unaffected by the backend swap).
+
+**Status**: **Declined.** No Turso database URL/token will be requested; the retrieval steps given
+to the user in chat are moot. Supabase continues as-is (Postgres + RLS + Auth + Storage).
+
+**Next**: see `D-DEMO5-AUTH` — items #3–#4 were built against Supabase in the same round this
+decision was reversed.
+
+---
+
+## D-DEMO5-AUTH — Login/Register/Logout + user-data model, built against Supabase
+
+**Date**: 2026-07-19. Source: DEMO_FEEDBACK_005 #3–#4, unblocked once `D-DEMO5-TURSO` declined the
+Turso move. Confirmed via `AskUserQuestion` ("build both now") rather than guessed, since scope was
+genuinely ambiguous (email/password vs. Gmail, what user-data fields) — Rule 8.2.
+
+1. **Login** (`app/(auth)/sign-in.tsx`) and **Register** (`app/(auth)/sign-up.tsx`) are real
+   screens against Supabase Auth (Rule 4.3), replacing the earlier dev-only stub (hardcoded
+   `rider@example.com` credentials, "TEMPORARY" comment). Register captures an optional display
+   name and passes it as sign-up metadata (`options.data.display_name`); handles the
+   `enable_confirmations = false` local-dev path (immediate session) and the hosted-project path
+   (email confirmation required, no session yet — shown a "check your email" screen) with the same
+   code, since `config.toml`'s local setting doesn't reflect what a real deployed project will use.
+   **Logout** already existed via the profile popup (`D-DEMO5` #3) — nothing new needed there.
+2. **User-data model** (`profiles` table, migration `20260719090000_create_profiles.sql`): one row
+   per auth user (`id` FK to `auth.users`, `display_name`), owner-only RLS (select/update — no
+   client-side insert/delete policy), auto-created by a `handle_new_user()` trigger on every
+   `auth.users` insert (Rule 4.5 — the invariant lives in the database, so it covers Register today
+   *and* any future sign-up path, e.g. Gmail OAuth, uniformly). An `updated_at` trigger keeps edits
+   timestamped. Scope deliberately kept to just `display_name` — avatar/other fields weren't
+   requested; adding them later is an additive migration, not a redesign.
+3. **Profile popup** (`src/components/profile-popup.tsx`) now shows and lets the user edit their
+   display name inline (tap to edit, Save button), backed by new `useProfile`/`useUpdateProfile`
+   hooks in `src/hooks/use-current-user.ts`. Resolves `KNOWN_ISSUES.md` KI-17.
+4. **DB test coverage** (`tests/db/profiles.test.ts`, Rule 6.5): trigger fires on sign-up (with and
+   without metadata), the seeded user has a profile row, owner can edit their own row, and RLS
+   blocks cross-user read/update/anon access — same shape as the existing `tests/db/rls.test.ts`.
+
+**Known gap, not silently swept**: GLOBAL_REQ §1 (OQ-G1) documents Gmail-only sign-in as the MVP
+business requirement; this round shipped email/password instead, without reconciling that
+conflict — flagged as `KNOWN_ISSUES.md` KI-18 for product-owner, not decided here.
+
+**Status**: Implemented and verified — `tsc`, `eslint`, `jest` (103 tests), `db reset`, `test:db`
+(45 tests across 6 files, including the new `profiles.test.ts`), and `expo export --platform web`
+all pass.
+
+---
+
+## D-DEMO6 — Demo-feedback round 006 (bug fixes)
+
+**Date**: 2026-07-19. Source: `docs/feedbacks/DEMO_FEEDBACK_006.md`, items #1–#3 (a sharing/deployment
+question, #4, is answered directly — see GUIDELINE.md §8, not a code change).
+
+1. **Header/status-bar overlap** (`app/onboarding.tsx` via `onboarding-screen.tsx`,
+   `app/(auth)/sign-in.tsx`, `app/(auth)/sign-up.tsx`): none of these three standalone (no native
+   header) screens accounted for the device safe area, so the "NIGHT GARAGE" brand text could render
+   under the status bar/notch. Fixed with `useSafeAreaInsets()` (`react-native-safe-area-context`,
+   already a transitive Expo Router dependency) added as `paddingTop: insets.top + SPACING.xl`. The
+   tab screens (Home/Health) were never affected — they render under `Tabs`' native header, which
+   already respects the safe area.
+2. **Onboarding odometer field sizing** (`onboarding-screen.tsx`): the km/mi segmented toggle was
+   visually dominant and the number input tiny — the opposite of the intended "field big, unit toggle
+   small." Root cause: the `compact` variant only set `alignSelf: 'flex-start'` on the segmented
+   container, which controls cross-axis (vertical) sizing in a row, not main-axis width — it had no
+   effect on how wide the toggle rendered next to the `flex: 1` input. Fixed by making the compact
+   container explicitly non-growing (`flexGrow: 0, flexShrink: 0`) and its segments non-growing too
+   (new `segmentCompact` style), so sizing no longer depends on an ambiguous Yoga default.
+3. **Home/Health blank immediately after onboarding** (`use-onboard-vehicle.ts`): the mutation's
+   `onSuccess` only called `invalidateQueries` (unawaited) instead of seeding the cache — Home/Health
+   mount immediately on `router.replace('/(tabs)/home')` and both gate their entire render on
+   `useVehicle()`'s cached data, which was still the pre-onboarding `null` at that exact moment
+   (background refetch hadn't resolved yet), so both screens rendered their "no vehicle yet" empty
+   state — Home literally rendered nothing (`<View style={styles.screen} />`) per its comment "index.tsx
+   only ever routes here once a vehicle exists." Fixed by calling `queryClient.setQueryData(VEHICLE_QUERY_KEY,
+   vehicle)` synchronously in `onSuccess` instead of invalidating, so the cache is correct before
+   navigation happens — no race, no flash of empty state.
+
+**`test:db` gate note**: this round's `npx vitest run --config vitest.config.ts` run failed 12/45
+tests with `{"message": "name resolution failed"}` on every live Supabase Auth/PostgREST call —
+verified via `git stash` (identical 12-failed/2-passed/31-skipped result with none of this round's
+changes applied) and GoTrue's own container logs (no incoming requests logged for the failing sign-ups,
+i.e. the failure is client-side/network-layer in this sandbox, not a server or business-logic
+regression) that this is a pre-existing environment condition, not caused by this round. `tsc`,
+`eslint`, `jest` (103 tests), `supabase db reset` (all 9 migrations apply cleanly), and
+`expo export --platform web` all pass. Tracked as `KNOWN_ISSUES.md` KI-19.
+
+**Status**: Implemented and verified (except the pre-existing `test:db` environment flake above).

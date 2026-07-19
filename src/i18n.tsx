@@ -11,6 +11,27 @@ export const LANGUAGES: { value: Language; label: string }[] = [
 
 const STORAGE_KEY = 'app_language';
 
+// Shared label-resolution utility (moved here from health-check/logic/labels.ts so the `home`
+// feature can use the same {key, fallback, vi} shape without a cross-feature deep-import — Rule
+// 1.2. Pure functions; no React dependency of their own even though this file also happens to
+// hold the LanguageProvider.
+export interface LabelDefinition {
+  key: string;
+  /** English text (also the fallback when a translation is missing). */
+  fallback: string;
+  /** Vietnamese text. */
+  vi: string;
+}
+
+export function label(key: string, fallback: string, vi: string): LabelDefinition {
+  return { key, fallback, vi };
+}
+
+/** Resolve a label to the given language (English is the fallback). */
+export function resolveLabel(def: LabelDefinition, language: Language): string {
+  return language === 'vi' ? def.vi : def.fallback;
+}
+
 interface LanguageContextValue {
   language: Language;
   setLanguage: (language: Language) => void;

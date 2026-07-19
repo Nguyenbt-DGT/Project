@@ -1,21 +1,26 @@
 import { useState } from 'react';
-import { router } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useLanguage } from '@/i18n';
 import { supabase } from '@/lib/supabase';
 import { COLORS, RADIUS, SPACING } from '@/theme';
 
 /**
- * TEMPORARY local-dev stand-in only. GLOBAL_REQ.md §1 (OQ-G1) decided the real MVP auth is
- * Gmail-only Google OAuth — this email/password form exists solely to sign in with the seeded
- * `rider@example.com` fixture (supabase/seed.sql) for local testing. Do not treat this as the
- * finished auth screen; it must be replaced by the Google OAuth flow before ship.
+ * Real email/password Login screen (DEMO_FEEDBACK_005 #3), built against Supabase Auth (Rule 4.3)
+ * now that the Turso migration is declined (DECISIONS.md D-DEMO5-TURSO). GLOBAL_REQ §1's Gmail-only
+ * assumption (OQ-G1) is not yet reconciled with this — flagged there for product-owner review.
  */
 export default function SignInRoute() {
-  const [email, setEmail] = useState('rider@example.com');
-  const [password, setPassword] = useState('password123');
+  const { language } = useLanguage();
+  const insets = useSafeAreaInsets();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const t = (en: string, vi: string) => (language === 'vi' ? vi : en);
 
   const onSubmit = async () => {
     setIsSubmitting(true);
@@ -26,17 +31,14 @@ export default function SignInRoute() {
       setErrorMessage(error.message);
       return;
     }
-    // index.tsx decides where to land (onboarding vs. Health) based on whether a vehicle exists.
+    // index.tsx decides where to land (onboarding vs. Home) based on whether a vehicle exists.
     router.replace('/');
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top + SPACING.xl }]}>
       <Text style={styles.brand}>NIGHT GARAGE</Text>
-      <Text style={styles.title}>Sign in</Text>
-      <Text style={styles.description}>
-        Temporary email/password sign-in for local testing. Real MVP auth is Gmail OAuth.
-      </Text>
+      <Text style={styles.title}>{t('Sign in', 'Đăng nhập')}</Text>
 
       <TextInput
         style={styles.input}
@@ -44,7 +46,7 @@ export default function SignInRoute() {
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
-        placeholder="Email"
+        placeholder={t('Email', 'Email')}
         placeholderTextColor={COLORS.inkFaint}
       />
       <TextInput
@@ -53,19 +55,28 @@ export default function SignInRoute() {
         onChangeText={setPassword}
         autoCapitalize="none"
         secureTextEntry
-        placeholder="Password"
+        placeholder={t('Password', 'Mật khẩu')}
         placeholderTextColor={COLORS.inkFaint}
       />
 
       {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
 
-      <Pressable style={styles.button} onPress={() => void onSubmit()} disabled={isSubmitting}>
+      <Pressable
+        style={styles.button}
+        onPress={() => void onSubmit()}
+        disabled={isSubmitting || !email || !password}
+        accessibilityRole="button"
+      >
         {isSubmitting ? (
           <ActivityIndicator color={COLORS.accentInk} />
         ) : (
-          <Text style={styles.buttonText}>Sign in</Text>
+          <Text style={styles.buttonText}>{t('Sign in', 'Đăng nhập')}</Text>
         )}
       </Pressable>
+
+      <Link href="/(auth)/sign-up" style={styles.link}>
+        {t("Don't have an account? Register", 'Chưa có tài khoản? Đăng ký')}
+      </Link>
     </View>
   );
 }
@@ -89,11 +100,6 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: '700',
     color: COLORS.ink,
-  },
-  description: {
-    fontSize: 13,
-    color: COLORS.inkMuted,
-    textAlign: 'center',
     marginBottom: SPACING.sm,
   },
   input: {
@@ -124,5 +130,11 @@ const styles = StyleSheet.create({
     color: COLORS.accentInk,
     fontWeight: '700',
     fontSize: 16,
+  },
+  link: {
+    color: COLORS.inkMuted,
+    fontSize: 13,
+    marginTop: SPACING.md,
+    textAlign: 'center',
   },
 });

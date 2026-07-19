@@ -1,27 +1,16 @@
 // String-key + per-language text for Health-tab copy (HEALTH_REQ §5 for status wording).
 // DEMO_FEEDBACK_002 #1: real English/Vietnamese switching. Each label carries its English
 // (`fallback`) and Vietnamese (`vi`) text inline, so coverage is guaranteed at the type level and
-// there's no separate key→translation map to drift. No React, no Supabase imports (Rule 1.3);
-// `Language` is a type-only import (erased at runtime, so this stays a pure module).
+// there's no separate key→translation map to drift. No React, no Supabase imports (Rule 1.3).
+//
+// `label`/`resolveLabel`/`LabelDefinition` themselves now live in `@/i18n` (shared across
+// features, e.g. `home`'s own labels file) — re-exported here so existing imports from this
+// module keep working unchanged.
 
-import type { Language } from '@/i18n';
+import { label, resolveLabel, type Language, type LabelDefinition } from '@/i18n';
 
-export interface LabelDefinition {
-  key: string;
-  /** English text (also the fallback when a translation is missing). */
-  fallback: string;
-  /** Vietnamese text. */
-  vi: string;
-}
-
-function label(key: string, fallback: string, vi: string): LabelDefinition {
-  return { key, fallback, vi };
-}
-
-/** Resolve a label to the given language (English is the fallback). */
-export function resolveLabel(def: LabelDefinition, language: Language): string {
-  return language === 'vi' ? def.vi : def.fallback;
-}
+export { resolveLabel };
+export type { LabelDefinition };
 
 /** One entry per MetricStatus — the word/message wording from HEALTH_REQ §5. `{value}` is replaced
  * with the formatted remaining/overdue amount for due_soon/overdue. */
@@ -187,7 +176,7 @@ export const HEALTH_LABELS = {
       'Price paid (optional)',
       'Giá đã trả (tuỳ chọn)'
     ),
-    pricePlaceholder: label('health.detail.price_placeholder', 'e.g. 30.00', 'vd. 30.00'),
+    pricePlaceholder: label('health.detail.price_placeholder', 'e.g. 30.00', 'vd. 750.000'),
     confirmMarkDone: label(
       'health.detail.confirm_mark_done',
       'Mark this item as replaced/serviced now?',
@@ -213,6 +202,34 @@ export const HEALTH_LABELS = {
       'Enter a value between 0 and the current odometer.',
       'Nhập giá trị từ 0 đến số km hiện tại.'
     ),
+    editIntervalLabel: label(
+      'health.detail.edit_interval_label',
+      'Edit interval',
+      'Sửa chu kỳ bảo dưỡng'
+    ),
+    editIntervalSave: label('health.detail.edit_interval_save', 'Save interval', 'Lưu chu kỳ'),
+    lastServiceDaysAgoLabel: label(
+      'health.detail.last_service_days_ago_label',
+      'Last service (days ago)',
+      'Lần bảo dưỡng gần nhất (số ngày trước)'
+    ),
+    lastServiceEventsLabel: label(
+      'health.detail.last_service_events_label',
+      'Last service (event count)',
+      'Lần bảo dưỡng gần nhất (số lần)'
+    ),
+    editPriceLabel: label('health.detail.edit_price_label', 'Edit price', 'Sửa giá'),
+    editPriceSave: label('health.detail.edit_price_save', 'Save price', 'Lưu giá'),
+    invalidValueError: label(
+      'health.detail.invalid_value_error',
+      'Enter a valid value.',
+      'Nhập giá trị hợp lệ.'
+    ),
+    updateFailed: label(
+      'health.detail.update_failed',
+      'Could not save. Please try again.',
+      'Không thể lưu. Vui lòng thử lại.'
+    ),
   },
   vehicleEdit: {
     entryLabel: label('health.vehicle_edit.entry_label', 'Edit vehicle', 'Sửa thông tin xe'),
@@ -223,6 +240,11 @@ export const HEALTH_LABELS = {
       'Không thể lưu thông tin xe. Vui lòng thử lại.'
     ),
     validation: label('health.vehicle_edit.validation', 'Enter a bike name.', 'Nhập tên xe.'),
+    otherOption: label(
+      'health.vehicle_edit.other_option',
+      'Other — enter manually',
+      'Khác — nhập thủ công'
+    ),
   },
   editOdometer: {
     title: label('health.edit_odometer.title', 'Edit odometer', 'Sửa số km'),

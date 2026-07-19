@@ -1,6 +1,6 @@
 ---
 description: Full regression suite — clean DB rebuild, all tests including RLS/RPC against local Supabase, coverage of KB business rules
-argument-hint: [feature] (optional: health-check | touring-plan | map-tracking to focus the analysis)
+argument-hint: [feature] (optional: home | health-check | touring-plan | map-tracking to focus the analysis)
 allowed-tools: Bash, Read, Glob, Grep
 ---
 

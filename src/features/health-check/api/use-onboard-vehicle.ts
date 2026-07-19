@@ -34,8 +34,11 @@ export function useOnboardVehicle() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: VEHICLE_QUERY_KEY });
+    onSuccess: (vehicle) => {
+      // Seed the cache synchronously (not just invalidate+refetch in the background) — Home/Health
+      // mount immediately after this resolves and must not render a stale "no vehicle yet" empty
+      // state while an unawaited background refetch is still in flight (DEMO_FEEDBACK_006 #3).
+      queryClient.setQueryData(VEHICLE_QUERY_KEY, vehicle);
     },
   });
 }

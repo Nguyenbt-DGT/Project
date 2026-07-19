@@ -33,7 +33,10 @@ export function LiveVitalsSection({
       <Text style={styles.title}>{t(HEALTH_LABELS.liveVitals.title)}</Text>
       <AsyncState isLoading={isLoading} isError={isError} onRetry={onRetry} isEmpty={false}>
         <View style={styles.row}>
-          <StatTile label={t(HEALTH_LABELS.liveVitals.odometer)} value={formatDistance(currentOdometerKm, unit)} />
+          <StatTile
+            label={t(HEALTH_LABELS.liveVitals.odometer)}
+            value={formatDistance(currentOdometerKm, unit)}
+          />
           <StatTile
             label={t(HEALTH_LABELS.liveVitals.todaysDistance)}
             value={formatDistance(todaysDistanceKm ?? 0, unit)}

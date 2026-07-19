@@ -175,6 +175,16 @@ they choose to select, show **three dependent dropdowns**:
 > seeded for MVP vs. later? Fabricated intervals are not acceptable; unresearched bikes should fall
 > back to generic defaults (§6) with a visible "using generic defaults" note.
 
+> **Implementation status (DEMO_FEEDBACK_005 mid-turn request — "since we have database now, brand
+> and name should be dropdowns")**: **Partially implemented.** The vehicle editor's Brand and Name
+> fields are now cascading dropdowns sourced from `bike_catalog` (Honda/Africa Twin, Kawasaki/Versys
+> 650, Suzuki/V-Strom 650, Honda/CB500X — the same small curated sample OQ-H4 already flags), with
+> a free-text "Other" fallback since the catalog doesn't cover every bike. **Not yet implemented**:
+> the Model-year dropdown, and actually wiring a selected catalog bike's `bike_part_intervals`
+> overrides into the service items shown on the Health tab (selecting "Kawasaki Versys 650" today
+> only sets `vehicles.brand`/`vehicles.name` — it does not yet override any part's interval). Full
+> three-dropdown cascade + interval override wiring remains future work.
+
 ---
 
 ## 7. Spent this year (secondary)

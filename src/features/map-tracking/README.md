@@ -1,5 +1,9 @@
 # Feature: map-tracking (KB §4)
 
+> **Note**: this feature's code is untouched, but its tab was repurposed to a "Lucky Draw"
+> coming-soon placeholder per explicit demo feedback (`DEMO_FEEDBACK_003` #5, `D-DEMO3`) — there is
+> currently **no nav entry point** into this module. See `KNOWN_ISSUES.md` KI-9.
+
 Layout per FRAMEWORK_RULES §1 — same shape as health-check:
 `index.ts` (public API) · `screens/` · `components/` · `hooks/` · `api/` · `logic/` (pure).
 

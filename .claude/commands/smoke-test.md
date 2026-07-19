@@ -1,6 +1,6 @@
 ---
 description: Fast sanity check — typecheck, lint, unit tests, and app boot. Pass/fail verdict in a few minutes
-argument-hint: [feature] (optional: health-check | touring-plan | map-tracking to scope the test run)
+argument-hint: [feature] (optional: home | health-check | touring-plan | map-tracking to scope the test run)
 allowed-tools: Bash, Read, Glob, Grep
 ---
 

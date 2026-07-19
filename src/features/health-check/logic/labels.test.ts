@@ -3,7 +3,13 @@
 
 import { describe, expect, it } from '@jest/globals';
 
-import { formatRemainingCaption, formatStatusLabel, HEALTH_LABELS, resolveLabel, STATUS_LABELS } from './labels';
+import {
+  formatRemainingCaption,
+  formatStatusLabel,
+  HEALTH_LABELS,
+  resolveLabel,
+  STATUS_LABELS,
+} from './labels';
 
 describe('formatStatusLabel — per-status wording (AC-1)', () => {
   it('fresh: "Fresh", ignoring any value passed in', () => {
@@ -15,9 +21,7 @@ describe('formatStatusLabel — per-status wording (AC-1)', () => {
   });
 
   it('replace: fixed message regardless of value (AC-1 exact fixture)', () => {
-    expect(formatStatusLabel('replace', '0 km')).toBe(
-      'This part needs to be replaced/repaired'
-    );
+    expect(formatStatusLabel('replace', '0 km')).toBe('This part needs to be replaced/repaired');
   });
 
   it('overdue: "Overdue {value} — ..." -> "Overdue 1 km — replace/repair as soon as possible" (AC-1 exact fixture)', () => {

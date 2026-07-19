@@ -31,6 +31,20 @@ Sign-in is via **Google (Gmail)**, offered two ways:
 > Gmail-only? Assumption: **Gmail-only** for MVP. Apple Sign-In may be required by App Store review
 > if any third-party sign-in is offered — flag for product-owner.
 
+> **Resolved (DEMO_FEEDBACK_005)**: a proposed database migration to Turso was reviewed and then
+> **declined — Supabase remains the Auth (and database/storage) provider**; see `DECISIONS.md`
+> `D-DEMO5-TURSO`.
+>
+> **Implemented (DEMO_FEEDBACK_005 #3)**: real email/password **Login** (`app/(auth)/sign-in.tsx`)
+> and **Register** (`app/(auth)/sign-up.tsx`) screens against Supabase Auth, replacing the earlier
+> dev-only stub. Register accepts an optional display name, passed as sign-up metadata so the
+> `handle_new_user` DB trigger seeds the new `profiles` row (§4). Logout lives in the cross-tab
+> profile popup. **This still does not implement Gmail OAuth** — it is email/password only, which
+> directly **conflicts with this section's Gmail-only business requirement above (OQ-G1)**.
+> Flagged for product-owner: either OQ-G1's assumption changes to "email/password, with Gmail
+> layered on later," or Gmail OAuth still needs to be built and email/password becomes a secondary
+> option. Not re-guessed here per Rule 8.2.
+
 ---
 
 ## 2. First-launch onboarding
@@ -70,7 +84,24 @@ The first time a user signs in, walk them through:
 
 ---
 
-## 4. Open questions (consolidated — for product-owner)
+## 4. User profile — visible from every tab
+
+**Implemented (DEMO_FEEDBACK_005 #5, #4).** A profile entry point is shown in the header of every
+tab (Home, Health, Touring, Lucky Draw) — "user can view their profile whenever they want." Tapping
+it opens a popup showing the signed-in account's email, an **editable display name**, and a
+**Sign out** action.
+
+- User data lives in a `profiles` table (one row per auth user, `20260719090000_create_profiles.sql`)
+  — owner-scoped RLS (select/update only), auto-created by a `handle_new_user` DB trigger on every
+  sign-up so the row always exists (Rule 4.5: the invariant lives in the database, not in each
+  sign-up code path). Only `display_name` exists today; avatar/other fields are future scope, not
+  yet requested.
+- Sign-out clears all cached app data (React Query cache) and navigates to sign-in immediately,
+  regardless of which tab the user was on.
+
+---
+
+## 5. Open questions (consolidated — for product-owner)
 
 | ID | Question | Current assumption |
 |---|---|---|
