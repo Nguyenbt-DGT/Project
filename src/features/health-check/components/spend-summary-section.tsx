@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { useLanguage, type Language } from '@/i18n';
+import { useLanguage } from '@/i18n';
 
 import { useT } from '../i18n';
-import { currentYearEntries, spendTotalCents, topNSpend } from '../logic/spend';
-import { HEALTH_LABELS, resolveLabel } from '../logic/labels';
-import { resolvePartName } from '../logic/part-names';
+import { formatCurrency } from '../logic/currency';
+import { currentYearEntries, displayName, spendTotalCents, topNSpend } from '../logic/spend';
+import { HEALTH_LABELS } from '../logic/labels';
 import type { SpendEntryRow } from '../types';
 import { AsyncState } from './async-state';
 import { SpendDetailsSheet } from './spend-details-sheet';
@@ -20,34 +20,16 @@ interface SpendSummarySectionProps {
   now: Date;
 }
 
-function formatCents(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
-}
-
-function humanizePartTypeKey(key: string): string {
-  return key
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-}
-
-/** Best-available label for a spend entry: the user's note, else the (translated) part name, else
- * a generic "Parts"/"Service" word (DEMO_FEEDBACK_003 #1). */
-export function displayName(entry: SpendEntryRow, language: Language): string {
-  if (entry.note && entry.note.trim() !== '') return entry.note;
-  if (entry.part_type_key) {
-    return resolvePartName(entry.part_type_key, humanizePartTypeKey(entry.part_type_key), language);
-  }
-  return resolveLabel(
-    entry.kind === 'service' ? HEALTH_LABELS.spend.kindService : HEALTH_LABELS.spend.kindParts,
-    language
-  );
-}
-
 /** Spent this year — secondary Health section (HEALTH_REQ §7, D-OQ-H5-SPEND-YEAR). Only the
  * on-tab total + top-3 ship in MVP; the full itemized Spend-details page is deferred
  * (D-HEALTH-MVP-SCOPE). */
-export function SpendSummarySection({ entries, isLoading, isError, onRetry, now }: SpendSummarySectionProps) {
+export function SpendSummarySection({
+  entries,
+  isLoading,
+  isError,
+  onRetry,
+  now,
+}: SpendSummarySectionProps) {
   const t = useT();
   const { language } = useLanguage();
   const [showDetails, setShowDetails] = useState(false);
@@ -74,14 +56,16 @@ export function SpendSummarySection({ entries, isLoading, isError, onRetry, now 
         >
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>{t(HEALTH_LABELS.spend.total)}</Text>
-            <Text style={styles.totalValue}>{formatCents(totalCents)}</Text>
+            <Text style={styles.totalValue}>{formatCurrency(totalCents, language)}</Text>
           </View>
           <View style={styles.topList}>
             <Text style={styles.topListLabel}>{t(HEALTH_LABELS.spend.topItems)}</Text>
             {top3.map((entry) => (
               <View key={entry.id} style={styles.topItemRow}>
                 <Text style={styles.topItemName}>{displayName(entry, language)}</Text>
-                <Text style={styles.topItemAmount}>{formatCents(entry.amount_cents)}</Text>
+                <Text style={styles.topItemAmount}>
+                  {formatCurrency(entry.amount_cents, language)}
+                </Text>
               </View>
             ))}
           </View>

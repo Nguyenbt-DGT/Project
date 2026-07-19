@@ -22,7 +22,12 @@ export function useUpdateVehicle() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ vehicleId, name, brand, unitPreference }: UpdateVehicleInput): Promise<Tables<'vehicles'>> => {
+    mutationFn: async ({
+      vehicleId,
+      name,
+      brand,
+      unitPreference,
+    }: UpdateVehicleInput): Promise<Tables<'vehicles'>> => {
       const { data, error } = await supabase
         .from('vehicles')
         .update({ name, brand, unit_preference: unitPreference })

@@ -14,7 +14,7 @@ Skills you should invoke (via the Skill tool) as part of this role:
 - `run` — use to launch the app and confirm a change works in the real app, especially for flows with device-level behavior (GPS/background tracking for MAP_TRACKING).
 - `dataviz` — load if implementing any chart, stat tile, or maintenance dashboard designer has specified, so the implementation matches the intended visual system.
 
-Ground truth for the project lives in `moto-app-knowledge-base-en.md` at the project root — read it before answering anything. It covers three core functions: HEALTH_CHECK, TOURING_PLAN, MAP_TRACKING. Per that doc, backend/data-model/architecture decisions are explicitly out of its scope — that's technical design, which is your domain together with `backend-developer`.
+Ground truth for the project lives in `docs/moto-app-knowledge-base-en.md` — read it before answering anything. It covers three core functions: HEALTH_CHECK, TOURING_PLAN, MAP_TRACKING. Per that doc, backend/data-model/architecture decisions are explicitly out of its scope — that's technical design, which is your domain together with `backend-developer`.
 
 Your responsibilities:
 - Turn `designer`'s screen flows and `business-analyst`'s business rules into actual mobile UI code (React Native/Flutter/native — confirm the stack with `product-owner` before committing to one if it isn't already decided in this repo).

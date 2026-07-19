@@ -8,11 +8,11 @@ import { useToast } from '@/components/toast';
 import {
   useMarkServiceDone,
   useServiceItems,
-  useSetLastServiceKm,
   useSetOdometer,
   useSpendEntries,
   useTodaysDistanceKm,
   useUndoLastService,
+  useUpdateServiceItem,
   useUpdateVehicle,
   useVehicle,
 } from '../api';
@@ -48,7 +48,7 @@ export function HealthCheckScreen() {
   const markServiceDone = useMarkServiceDone();
   const undoLastService = useUndoLastService();
   const setOdometer = useSetOdometer();
-  const setLastService = useSetLastServiceKm();
+  const updateServiceItem = useUpdateServiceItem();
   const updateVehicle = useUpdateVehicle();
   const { showToast } = useToast();
 
@@ -161,11 +161,11 @@ export function HealthCheckScreen() {
             { onError: () => Alert.alert(t(HEALTH_LABELS.serviceReminders.odometerFailed)) }
           );
         }}
-        isSettingLastService={setLastService.isPending}
-        onSetLastService={(item, lastServiceKm) => {
-          setLastService.mutate(
-            { serviceItemId: item.id, vehicleId: vehicle.id, lastServiceKm },
-            { onError: () => Alert.alert(t(HEALTH_LABELS.common.error)) }
+        isUpdatingItem={updateServiceItem.isPending}
+        onUpdateItem={(item, patch) => {
+          updateServiceItem.mutate(
+            { serviceItemId: item.id, vehicleId: vehicle.id, patch },
+            { onError: () => Alert.alert(t(HEALTH_LABELS.detail.updateFailed)) }
           );
         }}
       />

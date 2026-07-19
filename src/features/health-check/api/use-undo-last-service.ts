@@ -20,7 +20,9 @@ export function useUndoLastService() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ serviceItemId }: UndoLastServiceInput): Promise<Tables<'service_items'>> => {
+    mutationFn: async ({
+      serviceItemId,
+    }: UndoLastServiceInput): Promise<Tables<'service_items'>> => {
       const { data, error } = await supabase.rpc('undo_last_service', {
         p_service_item_id: serviceItemId,
       });

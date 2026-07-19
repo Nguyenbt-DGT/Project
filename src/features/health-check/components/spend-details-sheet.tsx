@@ -3,9 +3,10 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useLanguage } from '@/i18n';
 
 import { useT } from '../i18n';
+import { formatCurrency } from '../logic/currency';
 import { HEALTH_LABELS } from '../logic/labels';
+import { displayName } from '../logic/spend';
 import type { SpendEntryRow } from '../types';
-import { displayName } from './spend-summary-section';
 import { COLORS, SPACING } from './theme';
 
 interface SpendDetailsSheetProps {
@@ -15,13 +16,14 @@ interface SpendDetailsSheetProps {
   onClose: () => void;
 }
 
-function formatCents(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
-}
-
 /** Spend details (DEMO_FEEDBACK_001 #6): the full itemized list of this year's spend entries,
  * highest first. Opened by tapping the Spent-this-year summary. */
-export function SpendDetailsSheet({ visible, entries, totalCents, onClose }: SpendDetailsSheetProps) {
+export function SpendDetailsSheet({
+  visible,
+  entries,
+  totalCents,
+  onClose,
+}: SpendDetailsSheetProps) {
   const t = useT();
   const { language } = useLanguage();
   if (!visible) return null;
@@ -41,22 +43,35 @@ export function SpendDetailsSheet({ visible, entries, totalCents, onClose }: Spe
 
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>{t(HEALTH_LABELS.spend.total)}</Text>
-            <Text style={styles.totalValue}>{formatCents(totalCents)}</Text>
+            <Text style={styles.totalValue}>{formatCurrency(totalCents, language)}</Text>
           </View>
 
           <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
-            {sorted.map((entry) => (
-              <View key={entry.id} style={styles.row}>
-                <View style={styles.rowLeft}>
-                  <Text style={styles.rowName}>{displayName(entry, language)}</Text>
-                  <Text style={styles.rowMeta}>
-                    {entry.spent_at} ·{' '}
-                    {t(entry.kind === 'service' ? HEALTH_LABELS.spend.kindService : HEALTH_LABELS.spend.kindParts)}
+            {sorted.map((entry) => {
+              // A note is only worth its own line when it isn't already the primary label —
+              // i.e. when a translatable part name took priority over it (DEMO_FEEDBACK_004 #2).
+              const hasSeparateNote =
+                !!entry.part_type_key && !!entry.note && entry.note.trim() !== '';
+              return (
+                <View key={entry.id} style={styles.row}>
+                  <View style={styles.rowLeft}>
+                    <Text style={styles.rowName}>{displayName(entry, language)}</Text>
+                    <Text style={styles.rowMeta}>
+                      {entry.spent_at} ·{' '}
+                      {t(
+                        entry.kind === 'service'
+                          ? HEALTH_LABELS.spend.kindService
+                          : HEALTH_LABELS.spend.kindParts
+                      )}
+                      {hasSeparateNote ? ` · ${entry.note}` : ''}
+                    </Text>
+                  </View>
+                  <Text style={styles.rowAmount}>
+                    {formatCurrency(entry.amount_cents, language)}
                   </Text>
                 </View>
-                <Text style={styles.rowAmount}>{formatCents(entry.amount_cents)}</Text>
-              </View>
-            ))}
+              );
+            })}
             {sorted.length === 0 ? (
               <Text style={styles.empty}>{t(HEALTH_LABELS.spend.empty)}</Text>
             ) : null}

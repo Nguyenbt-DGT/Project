@@ -20,7 +20,9 @@ export function LanguageToggle() {
             accessibilityState={{ selected: active }}
             accessibilityLabel={lang.label}
           >
-            <Text style={[styles.text, active ? styles.textActive : null]}>{lang.value.toUpperCase()}</Text>
+            <Text style={[styles.text, active ? styles.textActive : null]}>
+              {lang.value.toUpperCase()}
+            </Text>
           </Pressable>
         );
       })}

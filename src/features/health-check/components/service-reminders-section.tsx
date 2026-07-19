@@ -4,9 +4,16 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLanguage } from '@/i18n';
 
 import { useT } from '../i18n';
+import { formatCurrency } from '../logic/currency';
 import { HEALTH_LABELS } from '../logic/labels';
 import type { DistanceUnit } from '../logic/units';
-import { toServiceItemViewModel, type ServiceItemRow, type ServiceItemViewModel, type VehicleRow } from '../types';
+import type { ServiceItemPatch } from '../api';
+import {
+  toServiceItemViewModel,
+  type ServiceItemRow,
+  type ServiceItemViewModel,
+  type VehicleRow,
+} from '../types';
 import { AsyncState } from './async-state';
 import { EditOdometerModal } from './edit-odometer-modal';
 import { ServiceItemCard } from './service-item-card';
@@ -25,12 +32,8 @@ interface ServiceRemindersSectionProps {
   isMarkingDone: boolean;
   onEditOdometer: (valueKm: number) => void;
   isSavingOdometer: boolean;
-  onSetLastService: (item: ServiceItemViewModel, lastServiceKm: number) => void;
-  isSettingLastService: boolean;
-}
-
-function formatCentsTotal(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
+  onUpdateItem: (item: ServiceItemViewModel, patch: ServiceItemPatch) => void;
+  isUpdatingItem: boolean;
 }
 
 /** Service Reminders — the primary Health section (HEALTH_REQ §4 / D-HEALTH-MVP-SCOPE). */
@@ -46,8 +49,8 @@ export function ServiceRemindersSection({
   isMarkingDone,
   onEditOdometer,
   isSavingOdometer,
-  onSetLastService,
-  isSettingLastService,
+  onUpdateItem,
+  isUpdatingItem,
 }: ServiceRemindersSectionProps) {
   const [selectedItem, setSelectedItem] = useState<ServiceItemViewModel | null>(null);
   const [isEditingOdometer, setIsEditingOdometer] = useState(false);
@@ -73,7 +76,9 @@ export function ServiceRemindersSection({
           accessibilityRole="button"
           style={styles.editOdometerButton}
         >
-          <Text style={styles.editOdometerText}>{t(HEALTH_LABELS.serviceReminders.editOdometer)}</Text>
+          <Text style={styles.editOdometerText}>
+            {t(HEALTH_LABELS.serviceReminders.editOdometer)}
+          </Text>
         </Pressable>
       </View>
 
@@ -92,7 +97,7 @@ export function ServiceRemindersSection({
         </View>
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>{t(HEALTH_LABELS.serviceReminders.runningTotal)}</Text>
-          <Text style={styles.totalValue}>{formatCentsTotal(runningTotalCents)}</Text>
+          <Text style={styles.totalValue}>{formatCurrency(runningTotalCents, language)}</Text>
         </View>
       </AsyncState>
 
@@ -107,11 +112,13 @@ export function ServiceRemindersSection({
           onMarkDone(selectedItem, priceCents);
           setSelectedItem(null);
         }}
-        isSettingLastService={isSettingLastService}
-        onSetLastService={(lastServiceKm) => {
+        isUpdatingItem={isUpdatingItem}
+        onUpdateItem={(patch) => {
           if (!selectedItem) return;
-          onSetLastService(selectedItem, lastServiceKm);
-          setSelectedItem(null);
+          // Deliberately do NOT close the sheet here (unlike onMarkDone above) — the sheet now
+          // has several independently-editable fields (interval, last-service, price), and
+          // closing after every single save would be disruptive (DEMO_FEEDBACK_004 #3).
+          onUpdateItem(selectedItem, patch);
         }}
       />
 

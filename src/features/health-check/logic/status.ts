@@ -96,7 +96,11 @@ export function axisResultsForItem(
 
   if (item.interval_km != null && item.last_service_km != null) {
     const elapsed = vehicle.current_odometer_km - item.last_service_km;
-    const progress = computeProgress(vehicle.current_odometer_km, item.last_service_km, item.interval_km);
+    const progress = computeProgress(
+      vehicle.current_odometer_km,
+      item.last_service_km,
+      item.interval_km
+    );
     results.push({
       axis: 'km',
       progress,
@@ -148,6 +152,10 @@ export function worstAxisResult(results: AxisResult[]): AxisResult | undefined {
 
 /** Overall status for a (possibly multi-axis) service item — worst of every tracked axis
  * (D-OQ-H3-TIME-DUAL-AXIS). An item with no configured axis is treated as fresh. */
-export function statusForItem(item: ServiceItemAxes, vehicle: VehicleOdometer, now: Date): MetricStatus {
+export function statusForItem(
+  item: ServiceItemAxes,
+  vehicle: VehicleOdometer,
+  now: Date
+): MetricStatus {
   return worstAxisResult(axisResultsForItem(item, vehicle, now))?.status ?? 'fresh';
 }

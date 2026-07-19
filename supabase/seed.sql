@@ -32,7 +32,7 @@ insert into auth.users (
   now(),
   now(),
   '{"provider":"email","providers":["email"]}',
-  '{}',
+  '{"display_name":"Rider"}',
   now(),
   now(),
   '',

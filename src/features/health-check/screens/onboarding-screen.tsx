@@ -11,6 +11,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useLanguage, type Language } from '@/i18n';
 import { COLORS, RADIUS, SPACING } from '@/theme';
@@ -31,6 +32,7 @@ import { roundKmForStorage, type DistanceUnit } from '../logic/units';
 export function OnboardingScreen() {
   const { language, setLanguage } = useLanguage();
   const t = useT();
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [brand, setBrand] = useState('');
   const [mileage, setMileage] = useState('');
@@ -65,8 +67,15 @@ export function OnboardingScreen() {
         recentlyChanged: recentKeys,
       },
       {
-        onSuccess: () => router.replace('/(tabs)/health-check'),
-        onError: () => setError(t(HEALTH_LABELS.onboarding.error)),
+        onSuccess: () => router.replace('/(tabs)/home'),
+        onError: (err) => {
+          // Surface the real cause alongside the friendly message — this flow has repeatedly
+          // failed for reasons the generic copy alone couldn't diagnose (wrong API port, RLS,
+          // etc.), so show it rather than guessing blind next time.
+          console.error('onboard_vehicle failed:', err);
+          const detail = err instanceof Error ? err.message : String(err);
+          setError(`${t(HEALTH_LABELS.onboarding.error)}\n(${detail})`);
+        },
       }
     );
   };
@@ -76,7 +85,10 @@ export function OnboardingScreen() {
       style={styles.screen}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + SPACING.xl }]}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text style={styles.brand}>{t(HEALTH_LABELS.onboarding.brand)}</Text>
         <Text style={styles.title}>{t(HEALTH_LABELS.onboarding.title)}</Text>
         <Text style={styles.subtitle}>{t(HEALTH_LABELS.onboarding.subtitle)}</Text>
@@ -196,7 +208,11 @@ function SegmentedRow<T extends string>({
         return (
           <Pressable
             key={option.value}
-            style={[styles.segment, active ? styles.segmentActive : null]}
+            style={[
+              styles.segment,
+              compact ? styles.segmentCompact : null,
+              active ? styles.segmentActive : null,
+            ]}
             onPress={() => onSelect(option.value)}
             accessibilityRole="button"
             accessibilityState={{ selected: active }}
@@ -236,7 +252,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
   },
   mileageRow: { flexDirection: 'row', gap: SPACING.sm, alignItems: 'center' },
-  mileageInput: { flex: 1 },
+  mileageInput: { flex: 1, minWidth: 0 },
   segmented: {
     flexDirection: 'row',
     backgroundColor: COLORS.surface,
@@ -246,7 +262,9 @@ const styles = StyleSheet.create({
     padding: 2,
     gap: 2,
   },
-  segmentedCompact: { alignSelf: 'flex-start' },
+  // alignSelf only affects cross-axis (vertical) sizing in a row — flexGrow/flexShrink: 0 is what
+  // actually stops this from stretching to fill the row alongside the (flex: 1) mileage input.
+  segmentedCompact: { alignSelf: 'flex-start', flexGrow: 0, flexShrink: 0 },
   segment: {
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md,
@@ -254,6 +272,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexGrow: 1,
   },
+  segmentCompact: { flexGrow: 0, paddingHorizontal: SPACING.sm },
   segmentActive: { backgroundColor: COLORS.accent },
   segmentText: { color: COLORS.inkMuted, fontWeight: '600', fontSize: 14 },
   segmentTextActive: { color: COLORS.accentInk },

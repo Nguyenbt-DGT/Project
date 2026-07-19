@@ -36,7 +36,9 @@ export function ServiceItemCard({ item, onPress }: ServiceItemCardProps) {
           <Text style={styles.name}>{item.name}</Text>
         </View>
         <View style={[styles.badge, { backgroundColor: STATUS_SOFT_COLORS[item.status] }]}>
-          <Text style={[styles.badgeText, { color: STATUS_COLORS[item.status] }]}>{item.displayLabel}</Text>
+          <Text style={[styles.badgeText, { color: STATUS_COLORS[item.status] }]}>
+            {item.displayLabel}
+          </Text>
         </View>
       </View>
       <WearMeter status={item.status} progressClamped={item.progressClamped} />

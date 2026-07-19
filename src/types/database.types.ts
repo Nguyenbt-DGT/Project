@@ -130,6 +130,27 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       service_events: {
         Row: {
           coupled_oil_filter_id: string | null
@@ -328,6 +349,7 @@ export type Database = {
           id: string
           model: string | null
           name: string
+          photo_url: string | null
           unit_preference: string
           user_id: string
         }
@@ -338,6 +360,7 @@ export type Database = {
           id?: string
           model?: string | null
           name: string
+          photo_url?: string | null
           unit_preference?: string
           user_id?: string
         }
@@ -348,6 +371,7 @@ export type Database = {
           id?: string
           model?: string | null
           name?: string
+          photo_url?: string | null
           unit_preference?: string
           user_id?: string
         }
@@ -412,6 +436,7 @@ export type Database = {
           id: string
           model: string | null
           name: string
+          photo_url: string | null
           unit_preference: string
           user_id: string
         }
@@ -431,6 +456,7 @@ export type Database = {
           id: string
           model: string | null
           name: string
+          photo_url: string | null
           unit_preference: string
           user_id: string
         }

@@ -11,7 +11,11 @@ import {
   View,
 } from 'react-native';
 
+import { useLanguage } from '@/i18n';
+
+import type { ServiceItemPatch } from '../api';
 import { useT } from '../i18n';
+import { formatCurrency, parseCurrencyToCents } from '../logic/currency';
 import { HEALTH_LABELS } from '../logic/labels';
 import type { MetricStatus } from '../logic/status';
 import { formatDistance, kmToMi, roundKmForStorage, type DistanceUnit } from '../logic/units';
@@ -26,14 +30,10 @@ interface ServiceItemDetailSheetProps {
   onClose: () => void;
   onMarkDone: (priceCents: number | undefined) => void;
   isMarking: boolean;
-  /** DEMO_FEEDBACK_002 #2: set the km checkpoint the next service is counted from. */
-  onSetLastService: (lastServiceKm: number) => void;
-  isSettingLastService: boolean;
-}
-
-function formatCents(cents: number | null): string {
-  if (cents == null) return '—';
-  return `$${(cents / 100).toFixed(2)}`;
+  /** DEMO_FEEDBACK_004 #3: interval, last-service (any axis), and price are all directly editable
+   * here via one general patch callback, not just at mark-as-replaced time. */
+  onUpdateItem: (patch: ServiceItemPatch) => void;
+  isUpdatingItem: boolean;
 }
 
 function formatLastServiceKm(item: ServiceItemViewModel, unit: DistanceUnit): string | null {
@@ -54,8 +54,15 @@ function formatIntervalSummary(item: ServiceItemViewModel, unit: DistanceUnit): 
   return parts.length > 0 ? parts.join(' · ') : '—';
 }
 
-/** "Basic" detail view per D-HEALTH-MVP-SCOPE, plus mark-as-replaced (AC-2) and a "Last service"
- * checkpoint editor for km-based items (DEMO_FEEDBACK_002 #2). */
+/** How many whole days ago `lastServiceAt` was, for the "last service (days ago)" editor's
+ * placeholder — the inverse of how that field is written (now - N days). */
+function daysAgo(iso: string): number {
+  return Math.round((Date.now() - new Date(iso).getTime()) / 86_400_000);
+}
+
+/** "Basic" detail view per D-HEALTH-MVP-SCOPE, extended with mark-as-replaced (AC-2) and direct
+ * editors for interval / last-service (any axis) / price (DEMO_FEEDBACK_002 #2, DEMO_FEEDBACK_004
+ * #3). */
 export function ServiceItemDetailSheet({
   item,
   unit,
@@ -63,57 +70,122 @@ export function ServiceItemDetailSheet({
   onClose,
   onMarkDone,
   isMarking,
-  onSetLastService,
-  isSettingLastService,
+  onUpdateItem,
+  isUpdatingItem,
 }: ServiceItemDetailSheetProps) {
   const t = useT();
+  const { language } = useLanguage();
   const [priceInput, setPriceInput] = useState('');
-  const [lastServiceInput, setLastServiceInput] = useState('');
-  const [lastServiceError, setLastServiceError] = useState(false);
+
+  const [intervalInput, setIntervalInput] = useState('');
+  const [intervalError, setIntervalError] = useState(false);
+
+  const [lastServiceKmInput, setLastServiceKmInput] = useState('');
+  const [lastServiceKmError, setLastServiceKmError] = useState(false);
+
+  const [lastServiceDaysInput, setLastServiceDaysInput] = useState('');
+  const [lastServiceDaysError, setLastServiceDaysError] = useState(false);
+
+  const [lastServiceEventsInput, setLastServiceEventsInput] = useState('');
+  const [lastServiceEventsError, setLastServiceEventsError] = useState(false);
+
+  const [editPriceInput, setEditPriceInput] = useState('');
+  const [editPriceError, setEditPriceError] = useState(false);
 
   if (!item) {
     return null;
   }
 
-  const lastServiceKm = formatLastServiceKm(item, unit);
-  const lastServiceDate = formatLastServiceDate(item);
+  const lastServiceKmDisplay = formatLastServiceKm(item, unit);
+  const lastServiceDateDisplay = formatLastServiceDate(item);
   const isKmBased = item.intervalKm != null;
+  const isDaysBased = item.intervalDays != null;
+  const isEventsBased = item.intervalEvents != null;
 
   const handleMarkDone = () => {
-    const trimmed = priceInput.trim();
-    if (trimmed === '') {
-      onMarkDone(undefined);
-      return;
-    }
-    const dollars = Number(trimmed);
-    if (!Number.isFinite(dollars) || dollars < 0) {
-      onMarkDone(undefined);
-      return;
-    }
-    onMarkDone(Math.round(dollars * 100));
+    onMarkDone(parseCurrencyToCents(priceInput, language) ?? undefined);
   };
 
-  const handleSaveLastService = () => {
-    const trimmed = lastServiceInput.trim();
+  const handleSaveInterval = () => {
+    const trimmed = intervalInput.trim();
+    const entered = Number(trimmed);
+    if (trimmed === '' || !Number.isFinite(entered) || entered <= 0) {
+      setIntervalError(true);
+      return;
+    }
+    setIntervalError(false);
+    if (isKmBased) {
+      const valueKm = unit === 'mi' ? roundKmForStorage(entered) : Math.round(entered);
+      onUpdateItem({ interval_km: valueKm });
+    } else if (isDaysBased) {
+      onUpdateItem({ interval_days: Math.round(entered) });
+    } else if (isEventsBased) {
+      onUpdateItem({ interval_events: Math.round(entered) });
+    }
+  };
+
+  const handleSaveLastServiceKm = () => {
+    const trimmed = lastServiceKmInput.trim();
     const entered = Number(trimmed);
     if (trimmed === '' || !Number.isFinite(entered) || entered < 0) {
-      setLastServiceError(true);
+      setLastServiceKmError(true);
       return;
     }
     const valueKm = unit === 'mi' ? roundKmForStorage(entered) : Math.round(entered);
     // Can't have serviced the bike at a higher odometer than it currently reads.
     if (valueKm > currentOdometerKm) {
-      setLastServiceError(true);
+      setLastServiceKmError(true);
       return;
     }
-    setLastServiceError(false);
-    onSetLastService(valueKm);
+    setLastServiceKmError(false);
+    onUpdateItem({ last_service_km: valueKm });
   };
 
-  const lastServicePlaceholder =
+  const handleSaveLastServiceDays = () => {
+    const trimmed = lastServiceDaysInput.trim();
+    const entered = Number(trimmed);
+    if (trimmed === '' || !Number.isFinite(entered) || entered < 0) {
+      setLastServiceDaysError(true);
+      return;
+    }
+    setLastServiceDaysError(false);
+    const iso = new Date(Date.now() - Math.round(entered) * 86_400_000).toISOString();
+    onUpdateItem({ last_service_at: iso });
+  };
+
+  const handleSaveLastServiceEvents = () => {
+    const trimmed = lastServiceEventsInput.trim();
+    const entered = Number(trimmed);
+    if (trimmed === '' || !Number.isFinite(entered) || entered < 0) {
+      setLastServiceEventsError(true);
+      return;
+    }
+    setLastServiceEventsError(false);
+    onUpdateItem({ events_elapsed: Math.round(entered) });
+  };
+
+  const handleSavePrice = () => {
+    const cents = parseCurrencyToCents(editPriceInput, language);
+    if (cents == null) {
+      setEditPriceError(true);
+      return;
+    }
+    setEditPriceError(false);
+    onUpdateItem({ price_cents: cents });
+  };
+
+  const lastServiceKmPlaceholder =
     item.lastServiceKm != null
       ? String(unit === 'mi' ? kmToMi(item.lastServiceKm) : item.lastServiceKm)
       : '0';
+  const intervalPlaceholder = isKmBased
+    ? String(
+        item.intervalKm != null ? (unit === 'mi' ? kmToMi(item.intervalKm) : item.intervalKm) : ''
+      )
+    : isDaysBased
+      ? String(item.intervalDays ?? '')
+      : String(item.intervalEvents ?? '');
+  const intervalUnitSuffix = isKmBased ? unit : isDaysBased ? 'days' : 'events';
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
@@ -148,62 +220,103 @@ export function ServiceItemDetailSheet({
                 label={t(HEALTH_LABELS.detail.interval)}
                 value={formatIntervalSummary(item, unit)}
               />
-              {lastServiceKm ? (
-                <KvRow label={t(HEALTH_LABELS.detail.lastServiceKm)} value={lastServiceKm} />
+              {lastServiceKmDisplay ? (
+                <KvRow label={t(HEALTH_LABELS.detail.lastServiceKm)} value={lastServiceKmDisplay} />
               ) : null}
-              {lastServiceDate ? (
-                <KvRow label={t(HEALTH_LABELS.detail.lastServiceAt)} value={lastServiceDate} />
+              {lastServiceDateDisplay ? (
+                <KvRow
+                  label={t(HEALTH_LABELS.detail.lastServiceAt)}
+                  value={lastServiceDateDisplay}
+                />
               ) : null}
-              <KvRow label={t(HEALTH_LABELS.detail.price)} value={formatCents(item.priceCents)} />
+              <KvRow
+                label={t(HEALTH_LABELS.detail.price)}
+                value={item.priceCents == null ? '—' : formatCurrency(item.priceCents, language)}
+              />
             </View>
 
-            {/* DEMO_FEEDBACK_002 #2: edit the "last service" odometer checkpoint (km items only). */}
+            {/* DEMO_FEEDBACK_004 #3: edit the service interval directly (whichever axis this item
+             * uses). */}
+            <EditRow
+              label={`${t(HEALTH_LABELS.detail.editIntervalLabel)} (${intervalUnitSuffix})`}
+              value={intervalInput}
+              placeholder={intervalPlaceholder}
+              onChangeText={(text) => {
+                setIntervalInput(text);
+                setIntervalError(false);
+              }}
+              onSave={handleSaveInterval}
+              isSaving={isUpdatingItem}
+              saveLabel={t(HEALTH_LABELS.detail.editIntervalSave)}
+              error={intervalError ? t(HEALTH_LABELS.detail.invalidValueError) : null}
+            />
+
+            {/* DEMO_FEEDBACK_002 #2 / DEMO_FEEDBACK_004 #3: last-service checkpoint editors, one
+             * per axis this item actually uses. */}
             {isKmBased ? (
-              <View style={styles.field}>
-                <Text style={styles.fieldLabel}>
-                  {t(HEALTH_LABELS.detail.setLastServiceLabel)} ({unit})
-                </Text>
-                <View style={styles.inlineRow}>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      styles.inlineInput,
-                      lastServiceError ? styles.inputError : null,
-                    ]}
-                    keyboardType="numeric"
-                    placeholder={lastServicePlaceholder}
-                    placeholderTextColor={COLORS.inkFaint}
-                    value={lastServiceInput}
-                    onChangeText={(text) => {
-                      setLastServiceInput(text);
-                      setLastServiceError(false);
-                    }}
-                  />
-                  <Pressable
-                    style={[
-                      styles.secondaryButton,
-                      isSettingLastService ? styles.buttonDisabled : null,
-                    ]}
-                    onPress={handleSaveLastService}
-                    disabled={isSettingLastService}
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.secondaryButtonText}>
-                      {isSettingLastService
-                        ? t(HEALTH_LABELS.common.loading)
-                        : t(HEALTH_LABELS.detail.setLastServiceSave)}
-                    </Text>
-                  </Pressable>
-                </View>
-                {lastServiceError ? (
-                  <Text style={styles.errorText}>
-                    {t(HEALTH_LABELS.detail.setLastServiceError)}
-                  </Text>
-                ) : (
-                  <Text style={styles.helpText}>{t(HEALTH_LABELS.detail.setLastServiceHelp)}</Text>
-                )}
-              </View>
+              <EditRow
+                label={`${t(HEALTH_LABELS.detail.setLastServiceLabel)} (${unit})`}
+                value={lastServiceKmInput}
+                placeholder={lastServiceKmPlaceholder}
+                onChangeText={(text) => {
+                  setLastServiceKmInput(text);
+                  setLastServiceKmError(false);
+                }}
+                onSave={handleSaveLastServiceKm}
+                isSaving={isUpdatingItem}
+                saveLabel={t(HEALTH_LABELS.detail.setLastServiceSave)}
+                error={lastServiceKmError ? t(HEALTH_LABELS.detail.setLastServiceError) : null}
+                help={!lastServiceKmError ? t(HEALTH_LABELS.detail.setLastServiceHelp) : undefined}
+              />
             ) : null}
+
+            {isDaysBased ? (
+              <EditRow
+                label={t(HEALTH_LABELS.detail.lastServiceDaysAgoLabel)}
+                value={lastServiceDaysInput}
+                placeholder={item.lastServiceAt != null ? String(daysAgo(item.lastServiceAt)) : '0'}
+                onChangeText={(text) => {
+                  setLastServiceDaysInput(text);
+                  setLastServiceDaysError(false);
+                }}
+                onSave={handleSaveLastServiceDays}
+                isSaving={isUpdatingItem}
+                saveLabel={t(HEALTH_LABELS.detail.setLastServiceSave)}
+                error={lastServiceDaysError ? t(HEALTH_LABELS.detail.invalidValueError) : null}
+              />
+            ) : null}
+
+            {isEventsBased ? (
+              <EditRow
+                label={t(HEALTH_LABELS.detail.lastServiceEventsLabel)}
+                value={lastServiceEventsInput}
+                placeholder={String(item.eventsElapsed)}
+                onChangeText={(text) => {
+                  setLastServiceEventsInput(text);
+                  setLastServiceEventsError(false);
+                }}
+                onSave={handleSaveLastServiceEvents}
+                isSaving={isUpdatingItem}
+                saveLabel={t(HEALTH_LABELS.detail.setLastServiceSave)}
+                error={lastServiceEventsError ? t(HEALTH_LABELS.detail.invalidValueError) : null}
+              />
+            ) : null}
+
+            {/* DEMO_FEEDBACK_004 #3: correct the stored price directly (independent of the
+             * mark-as-replaced flow below — this does not create a new spend entry). */}
+            <EditRow
+              label={t(HEALTH_LABELS.detail.editPriceLabel)}
+              value={editPriceInput}
+              placeholder={t(HEALTH_LABELS.detail.pricePlaceholder)}
+              onChangeText={(text) => {
+                setEditPriceInput(text);
+                setEditPriceError(false);
+              }}
+              onSave={handleSavePrice}
+              isSaving={isUpdatingItem}
+              saveLabel={t(HEALTH_LABELS.detail.editPriceSave)}
+              error={editPriceError ? t(HEALTH_LABELS.detail.invalidValueError) : null}
+            />
 
             <View style={styles.field}>
               <Text style={styles.fieldLabel}>{t(HEALTH_LABELS.detail.priceInputLabel)}</Text>
@@ -249,6 +362,61 @@ function StatusPill({ status, label }: { status: MetricStatus; label: string }) 
   return (
     <View style={[styles.statusPill, { backgroundColor: STATUS_COLORS[status] }]}>
       <Text style={styles.statusPillText}>{label}</Text>
+    </View>
+  );
+}
+
+interface EditRowProps {
+  label: string;
+  value: string;
+  placeholder: string;
+  onChangeText: (text: string) => void;
+  onSave: () => void;
+  isSaving: boolean;
+  saveLabel: string;
+  error?: string | null;
+  help?: string;
+}
+
+/** One inline "label + input + Save" editor row, the shared shape behind every direct-edit field
+ * in this sheet (interval, last-service per axis, price — DEMO_FEEDBACK_004 #3). */
+function EditRow({
+  label,
+  value,
+  placeholder,
+  onChangeText,
+  onSave,
+  isSaving,
+  saveLabel,
+  error,
+  help,
+}: EditRowProps) {
+  return (
+    <View style={styles.field}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <View style={styles.inlineRow}>
+        <TextInput
+          style={[styles.input, styles.inlineInput, error ? styles.inputError : null]}
+          keyboardType="numeric"
+          placeholder={placeholder}
+          placeholderTextColor={COLORS.inkFaint}
+          value={value}
+          onChangeText={onChangeText}
+        />
+        <Pressable
+          style={[styles.secondaryButton, isSaving ? styles.buttonDisabled : null]}
+          onPress={onSave}
+          disabled={isSaving}
+          accessibilityRole="button"
+        >
+          <Text style={styles.secondaryButtonText}>{isSaving ? '…' : saveLabel}</Text>
+        </Pressable>
+      </View>
+      {error ? (
+        <Text style={styles.errorText}>{error}</Text>
+      ) : help ? (
+        <Text style={styles.helpText}>{help}</Text>
+      ) : null}
     </View>
   );
 }
