@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moto Companion App — 4-MVP Roadmap</title>
+<style>
+  :root {
+    /* 3.1 structural neutrals (dark "rider" reskin) */
+    --ink: #EDEAE3;
+    --ink-muted: #9C9890;
+    --surface: #14171C;
+    --surface-card: #1C2027;
+    --surface-band: #2B2116;
+    --border-neutral: #363B43;
+    --border-band: #463B2C;
+
+    /* 3.2 interactive accents */
+    --accent: #FF6A1A;
+    --accent-signal: #FFC22E;
+    --accent-tint: #2E2016;
+    --on-accent: #1B1208;
+
+    /* 3.3 status palette (re-picked for dark base) */
+    --status-green: #4ADE80;
+    --status-green-tint: #113322;
+    --status-amber: #FFC65A;
+    --status-amber-tint: #3A2A0C;
+    --status-orange: #FF8A5C;
+    --status-orange-tint: #3D1D10;
+    --status-gray: #9AA3AF;
+    --status-gray-tint: #262B33;
+
+    /* 3.4 risk */
+    --risk-red: #FF5C5C;
+    --risk-red-tint: #2A1416;
+
+    /* reference-code neutral pill */
+    --code-neutral-bg: #262B33;
+    --code-neutral-border: #3A4048;
+
+    --font-display: "Oswald", "Archivo Narrow", "Arial Narrow", sans-serif;
+    --font-display-text: "Oswald", "Archivo Narrow", "Arial Narrow", sans-serif;
+    --font-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", "Consolas", "SFMono-Regular", monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    background: var(--surface);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 22px;
+    font-weight: 400;
+  }
+
+  .page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 48px;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  h1, h2, h3 { text-wrap: balance; font-weight: 600; color: var(--ink); }
+
+  a { color: var(--accent); }
+
+  button {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent-signal);
+    outline-offset: 2px;
+  }
+
+  .eyebrow {
+    font-family: var(--font-body);
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Header (5.1) */
+  /* ------------------------------------------------------------------ */
+  .header {
+    padding: 48px 0 32px;
+  }
+  .header .eyebrow { margin-bottom: 8px; }
+  .h1 {
+    font-family: var(--font-display);
+    font-size: 34px;
+    line-height: 38px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+  .stat-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .stat { display: inline-flex; align-items: baseline; gap: 6px; }
+  .stat-label {
+    font-family: var(--font-body);
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .stat-value {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    line-height: 20px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+  .stat-sep { color: var(--border-neutral); }
+
+  /* ------------------------------------------------------------------ */
+  /* Legend (5.2) */
+  /* ------------------------------------------------------------------ */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 20px;
+    padding-bottom: 64px;
+  }
+  .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    line-height: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex: none;
+  }
+  .legend-item svg { flex: none; width: 10px; height: 10px; }
+  .legend-item[data-status="green"] .legend-dot { background: var(--status-green); }
+  .legend-item[data-status="green"] svg { color: var(--status-green); }
+  .legend-item[data-status="amber"] .legend-dot { background: var(--status-amber); }
+  .legend-item[data-status="amber"] svg { color: var(--status-amber); }
+  .legend-item[data-status="orange"] .legend-dot { background: var(--status-orange); }
+  .legend-item[data-status="orange"] svg { color: var(--status-orange); }
+  .legend-item[data-status="gray"] .legend-dot { background: var(--status-gray); }
+  .legend-item[data-status="gray"] svg { color: var(--status-gray); }
+
+  /* ------------------------------------------------------------------ */
+  /* Zone A — Timeline (5.3) */
+  /* ------------------------------------------------------------------ */
+  .zone-a { padding-bottom: 64px; position: relative; }
+
+  .track-row { position: relative; height: 16px; margin-bottom: 8px; }
+  .track {
+    position: absolute;
+    left: calc(12.5% - 8px);
+    right: calc(12.5% - 8px);
+    top: 6px;
+    height: 4px;
+    background: #1A1D22;
+  }
+  .track::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 0;
+    border-top: 2px dashed var(--accent-signal);
+    transform: translateY(-50%);
+  }
+  .track-marker {
+    position: absolute;
+    top: 0;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    border: 2px solid var(--surface);
+    transform: translateX(-50%);
+  }
+  .track-marker::after {
+    content: "";
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    width: 2px;
+    height: 6px;
+    background: currentColor;
+    transform: translateX(-50%);
+  }
+  .track-marker[data-status="green"] { background: var(--status-green); color: var(--status-green); }
+  .track-marker[data-status="amber"] { background: var(--status-amber); color: var(--status-amber); }
+  .track-marker[data-status="orange"] { background: var(--status-orange); color: var(--status-orange); }
+  .track-marker[data-status="gray"] { background: var(--status-gray); color: var(--status-gray); }
+
+  .timeline-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+  }
+
+  .milestone-card {
+    background: var(--surface-card);
+    border: 1px solid var(--border-neutral);
+    border-top: 4px solid var(--card-accent, var(--status-gray));
+    border-radius: 2px;
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .milestone-card[data-status="green"] { --card-accent: var(--status-green); }
+  .milestone-card[data-status="amber"] { --card-accent: var(--status-amber); }
+  .milestone-card[data-status="orange"] { --card-accent: var(--status-orange); }
+  .milestone-card[data-status="gray"] { --card-accent: var(--status-gray); }
+
+  .inline-marker { display: none; }
+
+  .card-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .card-title {
+    font-family: var(--font-display-text);
+    font-size: 19px;
+    line-height: 24px;
+    font-weight: 500;
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    width: fit-content;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-family: var(--font-body);
+    font-size: 11px;
+    line-height: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .status-pill svg { flex: none; width: 14px; height: 14px; }
+  .status-pill.status-green { background: var(--status-green-tint); color: var(--status-green); }
+  .status-pill.status-amber { background: var(--status-amber-tint); color: var(--status-amber); }
+  .status-pill.status-orange { background: var(--status-orange-tint); color: var(--status-orange); }
+  .status-pill.status-gray { background: var(--status-gray-tint); color: var(--status-gray); }
+
+  .card-divider { border: none; border-top: 1px solid var(--border-neutral); }
+
+  .body-summary {
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--ink);
+  }
+  .body-summary.clamp {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .milestone-card.is-expanded .body-summary.clamp {
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    display: block;
+    overflow: visible;
+  }
+
+  .expanded-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 200ms ease-out;
+  }
+  .milestone-card.is-expanded .expanded-content {
+    max-height: 900px;
+  }
+  .expanded-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 2px;
+  }
+  .expanded-list li {
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--ink);
+  }
+  .expanded-list .sub-label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  .feature-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .chip {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-size: 13px;
+    padding: 4px 10px;
+    border: 1px solid var(--border-neutral);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .chip.has-detail {
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    font-family: var(--font-body);
+  }
+
+  .key-line {
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 700;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .expand-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    min-height: 32px;
+    width: 100%;
+    text-align: right;
+    color: var(--accent);
+    margin-top: auto;
+  }
+  .expand-trigger .chevron {
+    font-size: 12px;
+  }
+  .expand-trigger .expand-label {
+    font-size: 13px;
+    line-height: 18px;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Reference-code pill (5.5) */
+  /* ------------------------------------------------------------------ */
+  .code-pill {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--code-neutral-bg);
+    border: 1px solid var(--code-neutral-border);
+    color: var(--ink);
+    line-height: 1.4;
+  }
+  .code-pill.is-interactive { cursor: pointer; }
+  .code-pill.tied-green { background: var(--status-green-tint); border-color: var(--status-green); color: var(--status-green); }
+  .code-pill.tied-amber { background: var(--status-amber-tint); border-color: var(--status-amber); color: var(--status-amber); }
+  .code-pill.tied-orange { background: var(--status-orange-tint); border-color: var(--status-orange); color: var(--status-orange); }
+  .code-pill.tied-gray { background: var(--status-gray-tint); border-color: var(--status-gray); color: var(--status-gray); }
+
+  .citation {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 16px;
+    font-style: italic;
+    font-weight: 400;
+    color: var(--ink-muted);
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Zone B — Decisions band (5.6) */
+  /* ------------------------------------------------------------------ */
+  .zone-b {
+    background: var(--surface-band);
+    border-top: 2px solid var(--accent);
+    padding: 40px 0 40px;
+    margin-bottom: 64px;
+  }
+  .zone-b-inner { max-width: 1200px; margin: 0 auto; padding: 0 48px; }
+  .zone-b-heading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .h2 {
+    font-family: var(--font-display);
+    font-size: 22px;
+    line-height: 26px;
+    font-weight: 600;
+  }
+  .count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .decisions-table { display: flex; flex-direction: column; }
+  .decisions-row {
+    display: grid;
+    grid-template-columns: 40px 3fr 1.1fr 2fr;
+    gap: 16px;
+    align-items: start;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border-band);
+  }
+  .decisions-row:last-child { border-bottom: none; }
+  .decisions-row.decisions-head {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .decisions-row:not(.decisions-head):hover { background: var(--accent-tint); }
+
+  .letter-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .letter-badge.sm { width: 20px; height: 20px; font-size: 11px; }
+
+  .decision-text { font-size: 15px; line-height: 22px; }
+  .detailed-at { font-size: 12px; }
+  .current-status { display: flex; flex-direction: column; gap: 8px; }
+  .status-text { font-size: 13px; line-height: 18px; color: var(--ink); }
+
+  /* ------------------------------------------------------------------ */
+  /* Zone C — Risk callouts (5.7) */
+  /* ------------------------------------------------------------------ */
+  .zone-c { padding-bottom: 48px; }
+  .risk-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  .risk-card {
+    flex: 1;
+    background: var(--risk-red-tint);
+    border-left: 4px solid var(--risk-red);
+    border-top: 1px solid rgba(255,92,92,0.45);
+    border-right: 1px solid rgba(255,92,92,0.45);
+    border-bottom: 1px solid rgba(255,92,92,0.45);
+    border-radius: 2px;
+    padding: 24px;
+  }
+  .risk-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .risk-header svg { color: var(--risk-red); width: 20px; height: 20px; flex: none; }
+  .risk-eyebrow { color: var(--risk-red); }
+  .risk-header .letter-badge { margin-left: auto; }
+  .risk-card h3 {
+    font-family: var(--font-display-text);
+    font-size: 19px;
+    line-height: 24px;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .risk-card .citation { display: inline-block; margin-bottom: 10px; }
+  .risk-card p {
+    max-width: 65ch;
+    font-size: 15px;
+    line-height: 22px;
+  }
+  .risk-card .code-pill { margin: 0 2px; vertical-align: baseline; }
+
+  /* ------------------------------------------------------------------ */
+  /* Footer (5.8) */
+  /* ------------------------------------------------------------------ */
+  .footer {
+    border-top: 1px solid var(--border-neutral);
+    padding: 24px 0;
+  }
+  .footer p {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 18px;
+    color: var(--ink-muted);
+  }
+  .footer code {
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Tooltip (6.A) */
+  /* ------------------------------------------------------------------ */
+  .tooltip {
+    position: absolute;
+    z-index: 1000;
+    max-width: 280px;
+    background: var(--ink);
+    color: var(--surface);
+    font-family: var(--font-body);
+    font-size: 12px;
+    line-height: 16px;
+    padding: 8px 10px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 120ms ease-out;
+    pointer-events: none;
+  }
+  .tooltip.is-visible { opacity: 1; }
+  .tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 16px;
+    border: 5px solid transparent;
+    border-top-color: var(--ink);
+    border-bottom: 0;
+  }
+  .tooltip[hidden] { display: none; }
+
+  /* ------------------------------------------------------------------ */
+  /* Responsive: 640–1023px (7) */
+  /* ------------------------------------------------------------------ */
+  @media (max-width: 1023px) {
+    .page { padding: 0 24px; }
+    .zone-b-inner { padding: 0 24px; }
+
+    .track-row { display: none; }
+    .timeline-grid { grid-template-columns: repeat(2, 1fr); }
+    .milestone-card { border-top: 4px solid var(--card-accent, var(--status-gray)); }
+    .inline-marker {
+      position: relative;
+      display: inline-block;
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    .inline-marker::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      width: 2px;
+      height: 4px;
+      background: currentColor;
+      transform: translateX(-50%);
+    }
+    .inline-marker[data-status="green"] { background: var(--status-green); color: var(--status-green); }
+    .inline-marker[data-status="amber"] { background: var(--status-amber); color: var(--status-amber); }
+    .inline-marker[data-status="orange"] { background: var(--status-orange); color: var(--status-orange); }
+    .inline-marker[data-status="gray"] { background: var(--status-gray); color: var(--status-gray); }
+    .card-eyebrow-row { display: flex; align-items: center; }
+
+    .decisions-row {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    .decisions-row.decisions-head { display: none; }
+    .decisions-row:not(.decisions-head) {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .decision-line-1 { display: flex; align-items: center; gap: 10px; }
+    .kv-line { font-size: 13px; color: var(--ink-muted); }
+    .kv-line .kv-label { font-weight: 600; color: var(--ink); margin-right: 6px; }
+
+    .risk-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (min-width: 1024px) {
+    .decision-line-1 { display: contents; }
+    .kv-inline-label { display: none; }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Responsive: <640px (7) */
+  /* ------------------------------------------------------------------ */
+  @media (max-width: 639px) {
+    .timeline-grid { grid-template-columns: 1fr; }
+    .stat-strip { flex-direction: column; align-items: flex-start; gap: 4px; }
+    .stat-sep { display: none; }
+    .legend { justify-content: flex-start; }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Reduced motion (6, accessibility) */
+  /* ------------------------------------------------------------------ */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition-duration: 0.001ms !important;
+      animation-duration: 0.001ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="header">
+    <p class="eyebrow">Stakeholder Roadmap</p>
+    <h1 class="h1">Moto Companion App — 4-MVP Roadmap</h1>
+    <div class="stat-strip">
+      <span class="stat"><span class="stat-label">Milestones</span><span class="stat-value">4</span></span>
+      <span class="stat-sep">·</span>
+      <span class="stat"><span class="stat-label">PO decisions pending</span><span class="stat-value">4</span></span>
+      <span class="stat-sep">·</span>
+      <span class="stat"><span class="stat-label">Risks flagged</span><span class="stat-value">2</span></span>
+    </div>
+  </header>
+
+  <div class="legend" role="list" aria-label="Status legend">
+    <span class="legend-item" data-status="green" role="listitem">
+      <span class="legend-dot" aria-hidden="true"></span>
+      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6.5 10.2l2.2 2.2 4.8-5.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Near-done</span>
+    </span>
+    <span class="legend-item" data-status="amber" role="listitem">
+      <span class="legend-dot" aria-hidden="true"></span>
+      <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="5" y="3" width="10" height="14" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 2.6h4v1.8H8z" fill="currentColor"/><path d="M7 8h6M7 11h6M7 14h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      <span>Needs sign-off</span>
+    </span>
+    <span class="legend-item" data-status="orange" role="listitem">
+      <span class="legend-dot" aria-hidden="true"></span>
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.2 17.3 16H2.7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M10 8v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="10" cy="14.4" r="0.9" fill="currentColor"/></svg>
+      <span>Dependency risk</span>
+    </span>
+    <span class="legend-item" data-status="gray" role="listitem">
+      <span class="legend-dot" aria-hidden="true"></span>
+      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10 5.5v5l3.4 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Later</span>
+    </span>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- ZONE A — TIMELINE -->
+  <!-- ================================================================ -->
+  <section class="zone-a" aria-label="Milestone timeline">
+    <div class="track-row" aria-hidden="true">
+      <div class="track"></div>
+      <div class="track-marker" data-status="green" style="left:12.5%"></div>
+      <div class="track-marker" data-status="amber" style="left:37.5%"></div>
+      <div class="track-marker" data-status="orange" style="left:62.5%"></div>
+      <div class="track-marker" data-status="gray" style="left:87.5%"></div>
+    </div>
+
+    <div class="timeline-grid">
+
+      <!-- MVP1 — HEALTH_CHECK -->
+      <article class="milestone-card" data-status="green">
+        <p class="card-eyebrow card-eyebrow-row"><span class="inline-marker" data-status="green" aria-hidden="true"></span>MVP1</p>
+        <h3 class="card-title">HEALTH_CHECK</h3>
+        <span class="status-pill status-green">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6.5 10.2l2.2 2.2 4.8-5.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Near-done
+        </span>
+        <hr class="card-divider">
+        <p class="body-summary clamp">Already implemented and passing all gates as of 2026-07-17, having been through six demo-feedback rounds (<span class="code-pill">D-DEMO1–D-DEMO6</span>); framed as a &quot;close it out&quot; MVP, not a &quot;propose scope&quot; one.</p>
+
+        <div class="expanded-content">
+          <ul class="expanded-list">
+            <li>
+              <span class="sub-label">Shipped scope:</span>
+              <div class="feature-chips">
+                <span class="chip">Live Vitals</span>
+                <button type="button" class="chip has-detail" data-tooltip="4-state colored meter, mark-as-replaced + undo, per-part price and running total">Service Reminders</button>
+                <span class="chip">Spend-this-year summary</span>
+                <span class="chip">First-launch onboarding</span>
+                <span class="chip">EN/VI i18n</span>
+                <span class="chip">Brand/name cascading dropdowns</span>
+                <span class="chip">Persistent edit-vehicle entry point</span>
+              </div>
+            </li>
+            <li>One real blocker, <button type="button" class="code-pill tied-green is-interactive" data-tooltip="Selecting a catalog bike sets brand/name only — doesn't wire interval overrides into shown service items">KI-16</button>: selecting a catalog bike sets brand/name only — it does not wire that bike's interval overrides into the shown service items. This is the single item that must close before MVP1 can be called done.</li>
+            <li>Everything else remaining (<span class="code-pill">KI-6</span>, <span class="code-pill">KI-8</span>, <span class="code-pill">KI-2/3/4/7</span>, <button type="button" class="code-pill is-interactive" data-tooltip="Brand data — full brand/model catalog research">OQ-H4</button>, <button type="button" class="code-pill is-interactive" data-tooltip="Metric list">OQ-H7</button>, <button type="button" class="code-pill is-interactive" data-tooltip="Notification channel/trigger policy build-out">OQ-H6/OQ-H8</button>) is a non-blocking known limitation and can proceed in parallel with MVP2 work.</li>
+          </ul>
+        </div>
+
+        <p class="key-line">Sole blocker: <button type="button" class="code-pill tied-green is-interactive" data-tooltip="Selecting a catalog bike sets brand/name only — doesn't wire interval overrides into shown service items">KI-16</button></p>
+
+        <button type="button" class="expand-trigger" aria-expanded="false" data-more-count="3">
+          <span class="chevron">▸</span><span class="expand-label">3 more items</span>
+        </button>
+      </article>
+
+      <!-- MVP2 — TOURING_PLAN -->
+      <article class="milestone-card" data-status="amber">
+        <p class="card-eyebrow card-eyebrow-row"><span class="inline-marker" data-status="amber" aria-hidden="true"></span>MVP2</p>
+        <h3 class="card-title">TOURING_PLAN</h3>
+        <span class="status-pill status-amber">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="5" y="3" width="10" height="14" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 2.6h4v1.8H8z" fill="currentColor"/><path d="M7 8h6M7 11h6M7 14h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          Needs sign-off
+        </span>
+        <hr class="card-divider">
+        <p class="body-summary clamp">Sequenced as MVP2 only because the project owner named it &quot;Module 2&quot; — a pure dependency/value analysis (<span class="citation">§4.2</span>) would rank MAP_TRACKING first instead. This sequencing needs explicit PO reconfirmation before MVP2 build starts (decision <span class="code-pill">(b)</span>).</p>
+
+        <div class="expanded-content">
+          <ul class="expanded-list">
+            <li>Build cannot start at all until business-analyst resolves <button type="button" class="code-pill is-interactive" data-tooltip="Which HEALTH_CHECK status triggers the pre-departure warning">OQ-T1</button> (which HEALTH_CHECK status triggers the pre-departure warning), <button type="button" class="code-pill is-interactive" data-tooltip="Blocking vs. non-blocking warning">OQ-T2</button> (blocking vs. non-blocking warning), <button type="button" class="code-pill is-interactive" data-tooltip="Manual pin-dropping vs. an automatic routing engine">OQ-T3</button> (manual pin-dropping vs. an automatic routing engine), and <button type="button" class="code-pill is-interactive" data-tooltip="Whether any sharing/social backend is needed">OQ-T4</button> (whether any sharing/social backend is needed).</li>
+            <li>Provisional (not decided) MVP2 cut: manual multi-day trip creation with pinned stops/checkpoints, plus the pre-departure HEALTH_CHECK warning once OQ-T1/T2 are answered. Auto-route suggestion, AI-generated routes, adjustable curviness, shared route libraries, and group-shareable trip plans are candidates for later.</li>
+            <li>Any TOURING_PLAN feature that suggests routes from real riding data or builds a shareable route library depends on MAP_TRACKING's recording capability existing first (<span class="citation">§4.2</span>).</li>
+          </ul>
+        </div>
+
+        <p class="key-line">Build blocked on:
+          <button type="button" class="code-pill tied-amber is-interactive" data-tooltip="Which HEALTH_CHECK status triggers the pre-departure warning">OQ-T1</button>
+          <button type="button" class="code-pill tied-amber is-interactive" data-tooltip="Blocking vs. non-blocking warning">OQ-T2</button>
+          <button type="button" class="code-pill tied-amber is-interactive" data-tooltip="Manual pin-dropping vs. an automatic routing engine">OQ-T3</button>
+          <button type="button" class="code-pill tied-amber is-interactive" data-tooltip="Whether any sharing/social backend is needed">OQ-T4</button>
+        </p>
+
+        <button type="button" class="expand-trigger" aria-expanded="false" data-more-count="3">
+          <span class="chevron">▸</span><span class="expand-label">3 more items</span>
+        </button>
+      </article>
+
+      <!-- MVP3 — MAP_TRACKING -->
+      <article class="milestone-card" data-status="orange">
+        <p class="card-eyebrow card-eyebrow-row"><span class="inline-marker" data-status="orange" aria-hidden="true"></span>MVP3</p>
+        <h3 class="card-title">MAP_TRACKING</h3>
+        <span class="status-pill status-orange">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.2 17.3 16H2.7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M10 8v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="10" cy="14.4" r="0.9" fill="currentColor"/></svg>
+          Dependency risk
+        </span>
+        <hr class="card-divider">
+        <p class="body-summary clamp">Cannot start until the PO makes an explicit navigation-placement decision for MAP_TRACKING (<button type="button" class="code-pill is-interactive" data-tooltip="MAP_TRACKING nav placement, tied to decision (d) and the Lucky Draw placeholder">KI-9</button>, decision <span class="code-pill">(d)</span>): new 4th tab, merged into Touring, or replacing the &quot;Lucky Draw&quot; placeholder that occupied its old tab slot per stakeholder instruction (<button type="button" class="code-pill is-interactive" data-tooltip="Stakeholder instruction that reassigned the 3rd tab to Lucky Draw">D-DEMO3</button>). Engineering cannot settle this mid-build.</p>
+
+        <div class="expanded-content">
+          <ul class="expanded-list">
+            <li>Also gated on <button type="button" class="code-pill is-interactive" data-tooltip="Background recording">OQ-M1</button> (background recording), <button type="button" class="code-pill is-interactive" data-tooltip="Trip history">OQ-M2</button> (trip history), and <button type="button" class="code-pill is-interactive" data-tooltip="GPS-gap handling, which also affects HEALTH_CHECK's odometer accuracy">OQ-M3</button> (GPS-gap handling, which also affects HEALTH_CHECK's odometer accuracy, not just MAP_TRACKING).</li>
+            <li><button type="button" class="code-pill is-interactive" data-tooltip="Auth conflict — Gmail-only requirement vs. shipped email/password">OQ-G1</button> is explicitly not MVP3's problem to solve — per the single resolved position (<span class="citation">§6</span>), it is closed before MVP2 starts, so it appears here only as a precondition check.</li>
+            <li>Rationale for placing it third rather than later: code already exists in <code style="font-family: var(--font-mono); font-size: 12px;">src/features/map-tracking/</code> but is unreachable in the UI; shipping it unblocks HOME's &quot;Last ride&quot; caption (<button type="button" class="code-pill is-interactive" data-tooltip="HOME &quot;Last ride&quot; caption, blocked on MAP_TRACKING shipping">KI-13</button>) and unlocks TOURING_PLAN's route-suggestion differentiators sooner.</li>
+          </ul>
+        </div>
+
+        <p class="key-line">Blocked on nav-placement decision: <button type="button" class="code-pill tied-orange is-interactive" data-tooltip="MAP_TRACKING nav placement, tied to decision (d) and the Lucky Draw placeholder">KI-9</button></p>
+
+        <button type="button" class="expand-trigger" aria-expanded="false" data-more-count="3">
+          <span class="chevron">▸</span><span class="expand-label">3 more items</span>
+        </button>
+      </article>
+
+      <!-- MVP4 — Platform maturity & differentiators -->
+      <article class="milestone-card" data-status="gray">
+        <p class="card-eyebrow card-eyebrow-row"><span class="inline-marker" data-status="gray" aria-hidden="true"></span>MVP4</p>
+        <h3 class="card-title">Platform maturity &amp; differentiators</h3>
+        <span class="status-pill status-gray">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10 5.5v5l3.4 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Later
+        </span>
+        <hr class="card-divider">
+        <p class="body-summary clamp">Everything that is real scope but sits off the critical path of the three core KB functions (HEALTH_CHECK, TOURING_PLAN, MAP_TRACKING).</p>
+
+        <div class="expanded-content">
+          <ul class="expanded-list">
+            <li>Includes: multi-vehicle support (<button type="button" class="code-pill is-interactive" data-tooltip="Multi-vehicle support — schema ready, UI deferred by design">OQ-G2</button> — schema ready, UI deferred by design), full brand/model catalog research (<button type="button" class="code-pill is-interactive" data-tooltip="Brand data — full brand/model catalog research">OQ-H4</button>), notification channel/trigger policy build-out (<button type="button" class="code-pill is-interactive" data-tooltip="Notification channel/trigger policy build-out">OQ-H6/OQ-H8</button>), HOME health-score formula sign-off (<button type="button" class="code-pill is-interactive" data-tooltip="HOME health-score formula sign-off">KI-14</button>), the Lucky Draw scope decision (real feature vs. retirement, once MVP3 gives MAP_TRACKING a real nav destination), a full cost picture (fuel/insurance/registration/receipt capture/tax export), the TOURING_PLAN differentiators unlocked by MVP3, and AI-predicted service due-dates.</li>
+            <li>Sequenced last because these items either need real usage data to justify investment, or are already deferred-by-design (e.g., no-push-in-MVP notifications is <em>Decided</em>; multi-vehicle UI deferred).</li>
+          </ul>
+        </div>
+
+        <p class="key-line">No blockers — sequenced last by design</p>
+
+        <button type="button" class="expand-trigger" aria-expanded="false" data-more-count="2">
+          <span class="chevron">▸</span><span class="expand-label">2 more items</span>
+        </button>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- ZONE B — DECISIONS NEEDED FROM PO -->
+  <!-- ================================================================ -->
+  <section class="zone-b" aria-label="Decisions needed from PO">
+    <div class="zone-b-inner">
+      <div class="zone-b-heading">
+        <h2 class="h2">Decisions Needed from PO</h2>
+        <span class="count-badge">4</span>
+      </div>
+
+      <div class="decisions-table" role="table" aria-label="Decisions needed from PO">
+        <div class="decisions-row decisions-head" role="row">
+          <span role="columnheader"></span>
+          <span role="columnheader">Decision</span>
+          <span role="columnheader">Detailed at</span>
+          <span role="columnheader">Current status</span>
+        </div>
+
+        <div class="decisions-row" role="row">
+          <div class="decision-line-1">
+            <span role="cell" class="letter-badge">a</span>
+            <span role="cell" class="decision-text">Where <button type="button" class="code-pill is-interactive" data-tooltip="Auth conflict — Gmail-only requirement vs. shipped email/password">OQ-G1</button> (Gmail-only vs. shipped email/password) gets resolved</span>
+          </div>
+          <span role="cell" class="kv-line"><span class="kv-label kv-inline-label">Detailed at:</span><span class="citation detailed-at">§6</span></span>
+          <div role="cell" class="current-status">
+            <span class="kv-label kv-inline-label">Current status:</span>
+            <span class="status-pill status-amber">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="5" y="3" width="10" height="14" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 2.6h4v1.8H8z" fill="currentColor"/><path d="M7 8h6M7 11h6M7 14h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+              Needs sign-off
+            </span>
+            <p class="status-text">Single recommended position: before MVP2 starts. App Store review risk (Apple Sign-In may be required if any third-party sign-in is offered) is the deciding factor — see <span class="citation">§6</span>.</p>
+          </div>
+        </div>
+
+        <div class="decisions-row" role="row">
+          <div class="decision-line-1">
+            <span role="cell" class="letter-badge">b</span>
+            <span role="cell" class="decision-text">Confirm MVP2 (TOURING_PLAN) → MVP3 (MAP_TRACKING) order</span>
+          </div>
+          <span role="cell" class="kv-line"><span class="kv-label kv-inline-label">Detailed at:</span><span class="citation detailed-at">§4 (top), §6</span></span>
+          <div role="cell" class="current-status">
+            <span class="kv-label kv-inline-label">Current status:</span>
+            <span class="status-pill status-orange">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.2 17.3 16H2.7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M10 8v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="10" cy="14.4" r="0.9" fill="currentColor"/></svg>
+              Dependency risk
+            </span>
+            <p class="status-text">Currently sequenced only because the PO named TOURING_PLAN &quot;Module 2&quot; — a pure dependency analysis (<span class="citation">§4.2</span>) would rank MAP_TRACKING first. Needs explicit PO reconfirmation before MVP2 build starts, not just before MVP3.</p>
+          </div>
+        </div>
+
+        <div class="decisions-row" role="row">
+          <div class="decision-line-1">
+            <span role="cell" class="letter-badge">c</span>
+            <span role="cell" class="decision-text">MVP2 scope cut</span>
+          </div>
+          <span role="cell" class="kv-line"><span class="kv-label kv-inline-label">Detailed at:</span><span class="citation detailed-at">§4.3</span></span>
+          <div role="cell" class="current-status">
+            <span class="kv-label kv-inline-label">Current status:</span>
+            <span class="status-pill status-amber">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="5" y="3" width="10" height="14" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 2.6h4v1.8H8z" fill="currentColor"/><path d="M7 8h6M7 11h6M7 14h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+              Needs sign-off
+            </span>
+            <p class="status-text">Provisional split (manual trip planning + pre-departure check only; routing/sharing deferred) — needs business-analyst/PO sign-off before build starts.</p>
+          </div>
+        </div>
+
+        <div class="decisions-row" role="row">
+          <div class="decision-line-1">
+            <span role="cell" class="letter-badge">d</span>
+            <span role="cell" class="decision-text">MAP_TRACKING tab placement (vs. the Lucky Draw placeholder)</span>
+          </div>
+          <span role="cell" class="kv-line"><span class="kv-label kv-inline-label">Detailed at:</span><span class="citation detailed-at">§5, top of MVP3</span></span>
+          <div role="cell" class="current-status">
+            <span class="kv-label kv-inline-label">Current status:</span>
+            <span class="status-pill status-orange">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.2 17.3 16H2.7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M10 8v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="10" cy="14.4" r="0.9" fill="currentColor"/></svg>
+              Dependency risk
+            </span>
+            <p class="status-text"><button type="button" class="code-pill is-interactive" data-tooltip="MAP_TRACKING nav placement, tied to decision (d) and the Lucky Draw placeholder">KI-9</button> — needs an explicit PO decision before MVP3 starts. This is a navigation/product call, not something engineering can settle mid-build.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- ZONE C — RISK CALLOUTS -->
+  <!-- ================================================================ -->
+  <section class="zone-c" aria-label="Risk callouts">
+    <div class="risk-grid">
+
+      <article class="risk-card">
+        <div class="risk-header">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.2 17.3 16H2.7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M10 8v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="10" cy="14.4" r="0.9" fill="currentColor"/></svg>
+          <span class="eyebrow risk-eyebrow">Risk</span>
+          <span class="letter-badge sm" aria-label="Refers to decision b">b</span>
+        </div>
+        <h3>MVP2/MVP3 sequencing risk</h3>
+        <span class="citation">§6, decision (b)</span>
+        <p>TOURING_PLAN (MVP2) is sequenced ahead of MAP_TRACKING (MVP3) only because the project owner named it &quot;Module 2&quot; — not because a dependency or value analysis supports that order. Every competitor researched couples route planning to ride-recording data, so a pure analysis would rank MAP_TRACKING first or pair the two. This sequencing choice needs explicit PO confirmation before MVP2 build starts, not just before MVP3.</p>
+      </article>
+
+      <article class="risk-card">
+        <div class="risk-header">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.2 17.3 16H2.7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M10 8v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="10" cy="14.4" r="0.9" fill="currentColor"/></svg>
+          <span class="eyebrow risk-eyebrow">Risk</span>
+          <span class="letter-badge sm" aria-label="Refers to decision a">a</span>
+        </div>
+        <h3>OQ-G1 auth conflict risk</h3>
+        <span class="citation">§6, decision (a)</span>
+        <p>The shipped build uses email/password sign-in, but the documented business requirement is Gmail-only (<button type="button" class="code-pill is-interactive" data-tooltip="Auth conflict — Gmail-only requirement vs. shipped email/password">OQ-G1</button> / <button type="button" class="code-pill is-interactive" data-tooltip="Auth conflict — Gmail-only requirement vs. shipped email/password">KI-18</button>). The deciding factor is an App Store review implication: Apple Sign-In may be required if any third-party sign-in (Gmail) is offered. The single recommended resolution point is before MVP2 starts — the longer it ships unreconciled, the more UI/tests/docs accumulate against whichever path turns out wrong.</p>
+      </article>
+
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>Version 1.1 (2026-07-19) — see <code>document/ROAD_MAP.md</code> §5 for full changelog</p>
+  </footer>
+
+</div>
+
+<div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------------------------------------------------------------- */
+  /* Expand / collapse — milestone cards (interaction spec §6.B)       */
+  /* ---------------------------------------------------------------- */
+  var triggers = document.querySelectorAll(".expand-trigger");
+  for (var i = 0; i < triggers.length; i++) {
+    (function (btn) {
+      var card = btn.closest(".milestone-card");
+      var moreCount = btn.getAttribute("data-more-count");
+      var labelEl = btn.querySelector(".expand-label");
+      var chevronEl = btn.querySelector(".chevron");
+
+      btn.addEventListener("click", function () {
+        var expanded = card.classList.toggle("is-expanded");
+        btn.setAttribute("aria-expanded", expanded ? "true" : "false");
+        labelEl.textContent = expanded ? "Show less" : (moreCount + " more items");
+        chevronEl.textContent = expanded ? "▾" : "▸";
+      });
+    })(triggers[i]);
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Tooltips — reference-code pills & detailed feature chips (§6.A)   */
+  /* ---------------------------------------------------------------- */
+  var tooltip = document.getElementById("tooltip");
+  var showTimer = null;
+  var activeTrigger = null;
+
+  function positionTooltip(trigger) {
+    var rect = trigger.getBoundingClientRect();
+    var tRect = tooltip.getBoundingClientRect();
+    var top = rect.top + window.scrollY - tRect.height - 8;
+    var left = rect.left + window.scrollX + rect.width / 2 - tRect.width / 2;
+    var minLeft = window.scrollX + 8;
+    var maxLeft = window.scrollX + document.documentElement.clientWidth - tRect.width - 8;
+    if (left < minLeft) left = minLeft;
+    if (left > maxLeft) left = maxLeft;
+    if (top < window.scrollY + 4) {
+      top = rect.bottom + window.scrollY + 8;
+    }
+    tooltip.style.top = top + "px";
+    tooltip.style.left = left + "px";
+  }
+
+  function showTooltip(trigger) {
+    var text = trigger.getAttribute("data-tooltip");
+    if (!text) return;
+    tooltip.textContent = text;
+    tooltip.hidden = false;
+    positionTooltip(trigger);
+    // eslint-disable-next-line no-unused-expressions
+    tooltip.offsetHeight; // force reflow before adding the visible class
+    tooltip.classList.add("is-visible");
+    activeTrigger = trigger;
+    trigger.setAttribute("aria-describedby", "tooltip");
+  }
+
+  function hideTooltip() {
+    tooltip.classList.remove("is-visible");
+    tooltip.hidden = true;
+    if (activeTrigger) {
+      activeTrigger.removeAttribute("aria-describedby");
+      activeTrigger = null;
+    }
+  }
+
+  var tipTriggers = document.querySelectorAll("[data-tooltip]");
+  for (var j = 0; j < tipTriggers.length; j++) {
+    (function (trigger) {
+      trigger.addEventListener("mouseenter", function () {
+        window.clearTimeout(showTimer);
+        showTimer = window.setTimeout(function () { showTooltip(trigger); }, 150);
+      });
+      trigger.addEventListener("mouseleave", function () {
+        window.clearTimeout(showTimer);
+        hideTooltip();
+      });
+      trigger.addEventListener("focus", function () {
+        showTooltip(trigger);
+      });
+      trigger.addEventListener("blur", function () {
+        hideTooltip();
+      });
+      trigger.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") hideTooltip();
+      });
+      trigger.addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (tooltip.hidden || activeTrigger !== trigger) {
+          showTooltip(trigger);
+        } else {
+          hideTooltip();
+        }
+      });
+    })(tipTriggers[j]);
+  }
+
+  document.addEventListener("click", function () { hideTooltip(); });
+  window.addEventListener("resize", function () {
+    if (activeTrigger) positionTooltip(activeTrigger);
+  });
+  window.addEventListener("scroll", function () {
+    if (activeTrigger) positionTooltip(activeTrigger);
+  }, true);
+
+})();
+</script>
+</body>
+</html>
