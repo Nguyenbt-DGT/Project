@@ -26,7 +26,8 @@
       "Read(//tmp/**)",
       "Bash(node 'C:\\\\Users\\\\Admin\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--Project\\\\04fdf18f-c16f-485c-9e1c-ebb75366ceee\\\\scratchpad\\\\split2.js')",
       "Bash(echo \"TSC_EXIT=$?\")",
-      "Bash(echo \"ESLINT_EXIT=$?\")"
+      "Bash(echo \"ESLINT_EXIT=$?\")",
+      "Bash(git push *)"
     ]
   }
 }
