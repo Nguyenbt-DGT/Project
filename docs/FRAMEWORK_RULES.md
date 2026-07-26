@@ -283,6 +283,16 @@ push/PR; red CI blocks merge. CD deploys from `main` only and is inert until rep
 `DEPLOY_ENABLED=true` and the deploy secrets are set (see `deploy.yml`). This replaces the earlier
 Render-driven deploy flow.
 
+**Rule 7.5** — **Stay rebased to avoid cross-branch impact.** Before starting new work on a
+long-lived personal branch (`dev/<name>-<topic>`), pull/rebase it onto the latest `main` — do not
+keep building on a branch that has drifted many commits behind. Before opening a PR, rebase/merge
+latest `main` in again so the diff reviewed is the diff that lands. If your task requires touching a
+file another active branch (see the repo's Branches view) is also known to be editing, flag it
+instead of proceeding silently — parallel edits to the same file across branches are the main source
+of avoidable merge conflicts, not the branching itself. A clean `git graph`/Branches view (`0
+ahead`/`0 behind` on merged branches) reflects the state at that moment only — it does not guarantee
+future merges stay conflict-free.
+
 ---
 
 ## 8. RULES OF ENGAGEMENT FOR AI AGENTS
