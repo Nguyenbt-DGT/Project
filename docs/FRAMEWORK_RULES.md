@@ -158,8 +158,8 @@ only the Supabase URL + anon key qualify. The Supabase `service_role` key must N
 app bundle, in `app.json`, or in any `EXPO_PUBLIC_` variable — server-side only (Edge Functions /
 Render env vars).
 
-**Rule 3.7** — Every screen must handle its four states explicitly: loading, error (with retry),
-empty, and populated. No blank screens on failure.
+**Rule 3.7** — Every screen must handle its five states explicitly: loading, error (with retry),
+empty, populated, and offline/no-connectivity. No blank screens on failure.
 
 **Rule 3.8** — Offline awareness: riders lose signal on tours. Reads should serve cached data
 (TanStack Query cache); trip recording must work fully offline and sync when connectivity returns.
@@ -238,7 +238,7 @@ from feature branches.
 | Level | Tool | What it covers |
 |---|---|---|
 | Unit | **Jest** (`jest-expo` preset) | Pure business logic — MUST cover status computation, remaining-km/days math, offline buffer logic |
-| Component | **React Native Testing Library** | Screens & components: the four states of Rule 3.7, user interactions |
+| Component | **React Native Testing Library** | Screens & components: the five states of Rule 3.7, user interactions |
 | API/DB | **Vitest + local Supabase** | RLS policies, RPCs, Edge Functions against `supabase start` |
 | E2E | **Maestro** (post-MVP) | Critical flows: sign-in, log a service, record a trip, create a plan |
 

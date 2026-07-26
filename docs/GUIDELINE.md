@@ -86,7 +86,7 @@ Each feature folder has its own README with feature-specific rules.
    the same migration, Rule 4.2) → `npm run db:reset` → `npm run db:types` → commit migration +
    regenerated types together.
 4. **Implement**: pure logic in `logic/` first (with unit tests), then hooks/api, then screens
-   (handle all four states: loading / error / empty / populated, Rule 3.7).
+   (handle all five states: loading / error / empty / populated / offline, Rule 3.7).
 5. **Verify while working**: **`/smoke-test`** — fast typecheck + lint + unit tests + boot check.
 6. **Verify before PR**: **`/regresstion-test`** — full suite from a clean DB, including RLS/RPC
    tests and KB business-rule coverage. Also run through the feature once in the app yourself
