@@ -15,7 +15,7 @@ Mobile app (iOS/Android) for motorcycle riders: a Home landing dashboard, mainte
 1. [docs/FRAMEWORK_RULES.md](docs/FRAMEWORK_RULES.md) — **binding technical rules** for
    implementation, testing, Supabase usage, and agent conduct. If your approach conflicts with a
    rule there, the rule wins; deviations must be declared explicitly (Rule 8.6).
-2. [docs/moto-app-knowledge-base-en.md](docs/moto-app-knowledge-base-en.md) — business requirements
+2. [docs/MOTO_APP_KNOWLEDGE_BASE_EN.md](docs/MOTO_APP_KNOWLEDGE_BASE_EN.md) — business requirements
    (the "KB"). Its open questions are answered by the product-owner agent, never guessed (Rule 8.2).
 3. [docs/GUIDELINE.md](docs/GUIDELINE.md) — setup & day-to-day workflow: how to run the app,
    test gates (/smoke-test, /regresstion-test), agent handoff pattern, common pitfalls.
@@ -25,9 +25,9 @@ Mobile app (iOS/Android) for motorcycle riders: a Home landing dashboard, mainte
    non-obvious implementation choice and every open limitation is logged here, not just in chat
    history. Check before re-deciding something or re-discovering a known gap.
 
-Feature-specific requirements live in `docs/HEALTH_REQ.md`, `docs/HOME_REQ.md`, and
-`docs/GLOBAL_REQ.md` (auth, onboarding, units, language) — read the one relevant to the feature
-you're touching.
+Feature-specific requirements live in `docs/features/health/HEALTH_REQ.md`,
+`docs/features/home/HOME_REQ.md`, and `docs/features/global/GLOBAL_REQ.md` (auth, onboarding,
+units, language) — read the one relevant to the feature you're touching.
 
 ## Commands
 

@@ -1,4 +1,4 @@
-# Feature: home ([HOME_REQ.md](../../../docs/HOME_REQ.md))
+# Feature: home ([HOME_REQ.md](../../../docs/features/home/HOME_REQ.md))
 
 Status: **Implemented and tested through 2 rounds of demo feedback (DEMO_FEEDBACK_004 #4,
 DEMO_FEEDBACK_005).** The landing tab, shown immediately after login/onboarding, leftmost in the

@@ -12,12 +12,12 @@
 | # | Document | What it gives you |
 |---|---|---|
 | 1 | [README.md](../README.md) | Application overview: the four functions and how they connect |
-| 2 | [moto-app-knowledge-base-en.md](moto-app-knowledge-base-en.md) | The "KB" — business requirements, rules, and OPEN questions |
+| 2 | [MOTO_APP_KNOWLEDGE_BASE_EN.md](MOTO_APP_KNOWLEDGE_BASE_EN.md) | The "KB" — business requirements, rules, and OPEN questions |
 | 3 | [FRAMEWORK_RULES.md](FRAMEWORK_RULES.md) | Binding technical rules (stack, structure, testing, conduct) |
 | 4 | This file | Setup & workflow |
 | 5 | [DECISIONS.md](DECISIONS.md) | Decision log — resolved open questions, MVP scope; check before changing direction |
-| 6 | [HEALTH_REQ.md](HEALTH_REQ.md) · [HOME_REQ.md](HOME_REQ.md) · [GLOBAL_REQ.md](GLOBAL_REQ.md) | Feature & global requirements (Health tab; Home tab; auth/onboarding/units/language) |
-| 7 | [HEALTH_ACCEPTANCE.md](HEALTH_ACCEPTANCE.md) | Given/When/Then acceptance criteria the tests are written against |
+| 6 | [features/health/HEALTH_REQ.md](features/health/HEALTH_REQ.md) · [features/home/HOME_REQ.md](features/home/HOME_REQ.md) · [features/global/GLOBAL_REQ.md](features/global/GLOBAL_REQ.md) | Feature & global requirements (Health tab; Home tab; auth/onboarding/units/language) |
+| 7 | [features/health/HEALTH_ACCEPTANCE.md](features/health/HEALTH_ACCEPTANCE.md) | Given/When/Then acceptance criteria the tests are written against |
 | 8 | [KNOWN_ISSUES.md](KNOWN_ISSUES.md) | Known limitations & follow-ups |
 | 9 | [KICKOFF_NOTES.md](KICKOFF_NOTES.md) | Vision/ideas — NOT in scope unless product-owner prioritizes |
 
@@ -86,7 +86,7 @@ Each feature folder has its own README with feature-specific rules.
    the same migration, Rule 4.2) → `npm run db:reset` → `npm run db:types` → commit migration +
    regenerated types together.
 4. **Implement**: pure logic in `logic/` first (with unit tests), then hooks/api, then screens
-   (handle all four states: loading / error / empty / populated, Rule 3.7).
+   (handle all five states: loading / error / empty / populated / offline, Rule 3.7).
 5. **Verify while working**: **`/smoke-test`** — fast typecheck + lint + unit tests + boot check.
 6. **Verify before PR**: **`/regresstion-test`** — full suite from a clean DB, including RLS/RPC
    tests and KB business-rule coverage. Also run through the feature once in the app yourself

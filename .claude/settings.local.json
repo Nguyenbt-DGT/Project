@@ -5,7 +5,29 @@
       "Skill(dataviz)",
       "Artifact",
       "Bash(awk '{print $NF}')",
-      "Bash(grep -v '^\\\\.$\\\\|^\\\\.\\\\.$')"
+      "Bash(grep -v '^\\\\.$\\\\|^\\\\.\\\\.$')",
+      "Bash(npx expo *)",
+      "Bash(timeout 60 tail -f -n +1 \"C:\\\\Users\\\\Admin\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--Project\\\\28790376-fb36-4b28-8a33-de614333ec93\\\\tasks\\\\baajytxlx.output\")",
+      "Bash(curl -s http://localhost:8081/status)",
+      "Bash(curl -s http://localhost:8081 -H \"Accept: application/json\")",
+      "Bash(netstat -ano)",
+      "Bash(powershell -NoProfile -Command \"Get-Process -Id 14756 | Select-Object Id,ProcessName,Path,StartTime | Format-List\")",
+      "Bash(powershell -NoProfile -Command \"Stop-Process -Id 14756 -Force\")",
+      "Bash(xargs -n1 basename)",
+      "Bash(npx tsc *)",
+      "Bash(npx eslint *)",
+      "Bash(mkdir -p /tmp/reorg_split)",
+      "Bash(cat)",
+      "Bash(python /tmp/reorg_split/split.py)",
+      "Bash(git add *)",
+      "Bash(git restore *)",
+      "Bash(git commit -m ' *)",
+      "Bash(node -e ' *)",
+      "Read(//tmp/**)",
+      "Bash(node 'C:\\\\Users\\\\Admin\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--Project\\\\04fdf18f-c16f-485c-9e1c-ebb75366ceee\\\\scratchpad\\\\split2.js')",
+      "Bash(echo \"TSC_EXIT=$?\")",
+      "Bash(echo \"ESLINT_EXIT=$?\")",
+      "Bash(git push *)"
     ]
   }
 }

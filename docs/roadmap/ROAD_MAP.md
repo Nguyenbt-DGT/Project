@@ -4,8 +4,8 @@
 > call and every TOURING_PLAN scope item below is a **recommendation pending real
 > stakeholder/product-owner sign-off**, per this agent's charter. Items already ratified in
 > `docs/DECISIONS.md` (D-*) are cited as decided; everything else is provisional.
-> **Ground truth**: `docs/moto-app-knowledge-base-en.md` (KB), `docs/GLOBAL_REQ.md`,
-> `docs/HOME_REQ.md`, `docs/KNOWN_ISSUES.md`, `docs/DECISIONS.md`, `docs/KICKOFF_NOTES.md`.
+> **Ground truth**: `docs/MOTO_APP_KNOWLEDGE_BASE_EN.md` (KB), `docs/features/global/GLOBAL_REQ.md`,
+> `docs/features/home/HOME_REQ.md`, `docs/KNOWN_ISSUES.md`, `docs/DECISIONS.md`, `docs/KICKOFF_NOTES.md`.
 > **Date**: 2026-07-19.
 
 ---
@@ -278,7 +278,7 @@ Everything else that's real scope but not on the critical path of the three core
 
 ## 7. Open questions requiring real stakeholder input
 
-Consolidated by MVP — none of these are re-decided here; see `docs/moto-app-knowledge-base-en.md`
+Consolidated by MVP — none of these are re-decided here; see `docs/MOTO_APP_KNOWLEDGE_BASE_EN.md`
 §7 and `docs/DECISIONS.md` for full detail and current working assumptions.
 
 | MVP | Blocking / informing open questions |

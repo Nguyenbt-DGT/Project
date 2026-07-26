@@ -1,9 +1,9 @@
 # Feature Requirements — HEALTH_CHECK (the "Health" tab)
 
 > **Status**: Draft for reconciliation · **Owner**: product-owner · **Author of record**: business-analyst
-> **Feature**: 1 of 3 core flows (see [moto-app-knowledge-base-en.md](moto-app-knowledge-base-en.md) §2)
-> **Related**: [GLOBAL_REQ.md](GLOBAL_REQ.md) (auth, onboarding, units, i18n) ·
-> [FRAMEWORK_RULES.md](FRAMEWORK_RULES.md) (how to build it)
+> **Feature**: 1 of 3 core flows (see [MOTO_APP_KNOWLEDGE_BASE_EN.md](../../MOTO_APP_KNOWLEDGE_BASE_EN.md) §2)
+> **Related**: [GLOBAL_REQ.md](../global/GLOBAL_REQ.md) (auth, onboarding, units, i18n) ·
+> [FRAMEWORK_RULES.md](../../FRAMEWORK_RULES.md) (how to build it)
 >
 > **NOTE FOR AI / researched data**: Where a value is marked _generic default_, it is a reasonable
 > engineering starting point from general motorcycle-maintenance practice, **not** a brand-verified
@@ -98,7 +98,7 @@ mockup ([design/mockup/app-ui.html](../design/mockup/app-ui.html)).
 ### 4.3 How the numbers are seeded
 
 - The first values are computed from the **bike information entered at first launch**
-  (see [GLOBAL_REQ.md](GLOBAL_REQ.md) §2): current mileage + which parts were recently changed.
+  (see [GLOBAL_REQ.md](../global/GLOBAL_REQ.md) §2): current mileage + which parts were recently changed.
 - If the user marked a part as "recently changed" during onboarding, that part's reminder starts at
   **0%** (last service = the entered current odometer).
 

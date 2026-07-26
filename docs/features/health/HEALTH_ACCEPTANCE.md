@@ -2,7 +2,7 @@
 
 > **Owner**: product-owner agent. **For**: qa-automation (test targets), frontend-developer &
 > backend-developer (build targets).
-> **Depends on decisions in**: [DECISIONS.md](DECISIONS.md) — every scenario below cites the decision
+> **Depends on decisions in**: [DECISIONS.md](../../DECISIONS.md) — every scenario below cites the decision
 > ID it's derived from. If a decision changes, these criteria change with it.
 > **Scope**: Health MVP only, per D-HEALTH-MVP-SCOPE. Numbers used in examples are illustrative test
 > fixtures, not new business rules.
