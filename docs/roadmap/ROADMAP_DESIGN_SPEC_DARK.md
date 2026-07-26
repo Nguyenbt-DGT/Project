@@ -1,7 +1,7 @@
 # Design Spec — Moto Companion App Roadmap (Dark "Rider" Reskin)
 
 **Pipeline stage:** designer (this doc, step 1) → frontend-developer (implementation, step 2)
-**Relationship to prior work:** this is a **re-theme of `docs/roadmap-design-spec.md`**, applied to
+**Relationship to prior work:** this is a **re-theme of `docs/roadmap/ROADMAP_DESIGN_SPEC.md`**, applied to
 the existing, correct implementation at `design/prototype/moto-app-roadmap.html`. Content,
 information architecture, the 4-state status taxonomy, the interaction model, and the responsive
 breakpoints are **carried over unchanged** — see §0 for exactly what that means per section. This

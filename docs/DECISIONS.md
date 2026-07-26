@@ -5,7 +5,7 @@
 > decisions).
 >
 > **What this is**: a dated, append-only record of product/technical decisions made to unblock
-> design and build. It does not replace the KB (`moto-app-knowledge-base-en.md`) — the KB is the
+> design and build. It does not replace the KB (`MOTO_APP_KNOWLEDGE_BASE_EN.md`) — the KB is the
 > business-analyst-owned source of confirmed business rules; this log is where the product-owner
 > agent resolves the KB's open questions (§7) into buildable decisions, sets MVP scope, and settles
 > small implementation-ambiguity gaps that would otherwise block testable acceptance criteria.
@@ -366,7 +366,7 @@ closed here so QA has an unambiguous boundary to test against.
 
 ## D-DEMO1 — Demo-feedback round 001 changes
 
-**Date**: 2026-07-18. Source: `docs/DEMO_FEEDBACK_001.md`.
+**Date**: 2026-07-18. Source: `docs/feedbacks/DEMO_FEEDBACK_001.md`.
 
 **Decisions**:
 
@@ -587,7 +587,7 @@ this exactly: it failed with a module-resolution error despite never touching Re
 
 ## D-DEMO4 — Demo-feedback round 004 changes
 
-**Date**: 2026-07-19. Source: `docs/DEMO_FEEDBACK_004.md` + `docs/HOME_REQ.md`.
+**Date**: 2026-07-19. Source: `docs/feedbacks/DEMO_FEEDBACK_004.md` + `docs/features/home/HOME_REQ.md`.
 
 **Decisions**:
 
@@ -612,7 +612,7 @@ this exactly: it failed with a module-resolution error despite never touching Re
    in one visit. Editing price here is a direct correction to `service_items.price_cents` and does
    **not** create a new `spend_entries` row — that stays tied to the mark-as-replaced flow only, to
    avoid double-counting spend.
-4. **HOME tab** (feedback #4, `HOME_REQ.md`): new leftmost tab, shown immediately after
+4. **HOME tab** (feedback #4, `docs/features/home/HOME_REQ.md`): new leftmost tab, shown immediately after
    login/onboarding instead of the Health tab. A `home` feature was added following the same
    structure as `health-check` (Rule 1.1). Key implementation choices:
    - **Vehicle hero card** (§3.1): tapping the photo area picks/uploads a new photo (via
@@ -661,7 +661,7 @@ before this ships to real Vietnamese users handling real money.
 
 ## D-HOME-HEALTH-SCORE — Bike-health score formula, status messages, and ring simplification
 
-**Date**: 2026-07-19. Source: HOME_REQ.md §4.2 ("Displays the Average of the Bike's health... The
+**Date**: 2026-07-19. Source: docs/features/home/HOME_REQ.md §4.2 ("Displays the Average of the Bike's health... The
 content of each status I let you decide").
 
 **Decision**:

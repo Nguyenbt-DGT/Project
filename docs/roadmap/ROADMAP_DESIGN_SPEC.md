@@ -1,7 +1,7 @@
 # Design Spec — Moto Companion App Roadmap (Stakeholder HTML Visualization)
 
 **Pipeline stage:** product-owner (content brief) → **designer (this doc)** → frontend-developer (implementation)
-**Source content:** content brief pasted into this task, extracted from `document/ROAD_MAP.md`. This spec adds no facts beyond that brief — see §9 for the handful of structural inferences that should get a quick nod before build.
+**Source content:** content brief pasted into this task, extracted from `docs/roadmap/ROAD_MAP.md`. This spec adds no facts beyond that brief — see §9 for the handful of structural inferences that should get a quick nod before build.
 
 ---
 
@@ -255,5 +255,5 @@ One consistent rule used everywhere in the page: **any string matching `KI-#`, `
 
 1. **Header stat strip** ("Milestones 4 · PO decisions pending 4 · Risks flagged 2") is a count I derived directly from the brief's own section structure (4 MVPs, a 4-row decisions table, 2 named risk callouts) — not a new fact, but flagging it since it wasn't explicitly specified as a component in the brief. Drop it if product-owner would rather the header stay title-only.
 2. **Decisions-table pill color mapping** (a)/(c) → amber, (b)/(d) → orange (§5.6) is a designer inference tying each decision to the status family of the milestone it primarily blocks. It's defensible from the brief's own framing (sequencing/placement = "dependency risk" language; scope/auth sign-off = "needs sign-off" language) but is a visual judgment call, not a stated rule — confirm before build.
-3. **Footer version line length**: the brief's §5 "Version 1.1" entry is a multi-sentence changelog paragraph. The spec calls for a one-line footer treatment; frontend-developer should truncate to "Version 1.1 (2026-07-19) — see `document/ROAD_MAP.md` §5 for full changelog" rather than reflowing the entire paragraph into the footer. Confirm this truncation is acceptable, or specify a "view full changelog" affordance if not — none is designed here since the brief didn't ask for one.
+3. **Footer version line length**: the brief's §5 "Version 1.1" entry is a multi-sentence changelog paragraph. The spec calls for a one-line footer treatment; frontend-developer should truncate to "Version 1.1 (2026-07-19) — see `docs/roadmap/ROAD_MAP.md` §5 for full changelog" rather than reflowing the entire paragraph into the footer. Confirm this truncation is acceptable, or specify a "view full changelog" affordance if not — none is designed here since the brief didn't ask for one.
 4. **Dark mode** is intentionally out of scope for this spec — the brief's presentation context (laptop, stakeholder meeting) reads as a single-session, likely-projected, light-context use case, and no dark-mode requirement was stated. If frontend-developer's build pipeline auto-generates a dark variant, treat that as a follow-up design pass, not an extension of this spec.

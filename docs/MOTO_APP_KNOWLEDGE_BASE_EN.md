@@ -339,6 +339,6 @@ listed as separate items anywhere in this document.
   onboarding, units, language); added §7 (consolidated, de-duplicated open-question list spanning
   all sections). Business-function section numbers (§2 HEALTH_CHECK, §3 TOURING_PLAN, §4
   MAP_TRACKING) are unchanged from v0.2 to keep external cross-references (FRAMEWORK_RULES.md,
-  HEALTH_REQ.md, GLOBAL_REQ.md, GUIDELINE.md) valid.
+  features/health/HEALTH_REQ.md, features/global/GLOBAL_REQ.md, GUIDELINE.md) valid.
 - **Needs updating when**: the final list of maintenance metrics is confirmed (OQ-H7), and any item
   in the §7 consolidated open-questions list is answered by product-owner.

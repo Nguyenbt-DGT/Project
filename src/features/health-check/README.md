@@ -1,4 +1,4 @@
-# Feature: health-check (KB §2 · [HEALTH_REQ.md](../../../docs/HEALTH_REQ.md))
+# Feature: health-check (KB §2 · [HEALTH_REQ.md](../../../docs/features/health/HEALTH_REQ.md))
 
 Status: **Implemented, tested, and iterated through 5 rounds of demo feedback.** Layout per
 FRAMEWORK_RULES §1:
@@ -51,7 +51,7 @@ The vehicle editor's **Brand and Name fields are cascading dropdowns** sourced f
 a small curated sample (`D-OQ-H4`). Selecting a catalog bike does not yet apply its
 `bike_part_intervals` overrides to the vehicle's service items — see `KNOWN_ISSUES.md` KI-16.
 
-Acceptance criteria: [HEALTH_ACCEPTANCE.md](../../../docs/HEALTH_ACCEPTANCE.md) (AC-1..AC-6).
+Acceptance criteria: [HEALTH_ACCEPTANCE.md](../../../docs/features/health/HEALTH_ACCEPTANCE.md) (AC-1..AC-6).
 Server-side invariants (baseline resets, odometer accumulation, oil-filter coupling, undo) live in
 Postgres RPCs (`mark_service_done`, `undo_last_service`, `apply_trip_distance`, `set_odometer`,
 `onboard_vehicle`) per Rule 4.5 — this feature calls them, it does not re-implement them

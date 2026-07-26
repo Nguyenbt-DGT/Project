@@ -6,7 +6,7 @@
 > Every agent MUST read this file before writing or modifying code. If a rule here conflicts with an
 > agent's own habits or generic best practices, **this file wins**.
 >
-> Business requirements live in [moto-app-knowledge-base-en.md](moto-app-knowledge-base-en.md) (the "KB").
+> Business requirements live in [MOTO_APP_KNOWLEDGE_BASE_EN.md](MOTO_APP_KNOWLEDGE_BASE_EN.md) (the "KB").
 > This file covers the technical rules only. The KB defines WHAT to build; this file defines HOW.
 
 ---
@@ -323,6 +323,23 @@ output/PR with the reason. Silent deviations are treated as defects.
 **Rule 8.7** — Update this file (via PR) when a new recurring technical decision is made — rules
 that live only in chat history don't exist.
 
+**Rule 8.8** — **Per-feature documentation convention.** Each of the three KB core functions
+(HEALTH_CHECK, TOURING_PLAN, MAP_TRACKING) and HOME gets its own `<FEATURE>_REQ.md` (detailed
+UI/flow spec — author: business-analyst/designer, owner: product-owner) once work on it goes beyond
+the KB's business-only scope (KB §8: the KB stays goals/business only, no UI or data detail). Add a
+`<FEATURE>_ACCEPTANCE.md` (Given/When/Then criteria — author: product-owner, for qa-automation and
+the implementation agents) only once that feature has a scope decision recorded in
+`docs/DECISIONS.md` to derive criteria from — writing acceptance criteria ahead of a locked decision
+is guessing, not testing, and violates Rule 8.2. Do not invent a different split (e.g. one combined
+`<FEATURE>_SPEC.md`) without declaring that deviation per Rule 8.6.
+
+**Rule 8.9** — **Keep feature docs in sync with decisions.** When `docs/DECISIONS.md` gets a new
+entry for a feature that already has a `<FEATURE>_REQ.md` and/or `<FEATURE>_ACCEPTANCE.md`, update
+those files in the same PR — a decision that changes behavior without updating the spec/acceptance
+criteria describing that behavior leaves the docs silently wrong, which is as bad as not having them.
+`docs/KNOWN_ISSUES.md` follows the same rule for limitations discovered while implementing that
+feature.
+
 ---
 
 ## 9. QUICK-REFERENCE COMMANDS
@@ -348,5 +365,5 @@ npx supabase functions serve       # run Edge Functions locally
 
 - **Version**: 1.0 (2026-07-15)
 - **Owner**: All agents; changes via PR per Rule 8.7.
-- **Related**: [moto-app-knowledge-base-en.md](moto-app-knowledge-base-en.md) (business),
+- **Related**: [MOTO_APP_KNOWLEDGE_BASE_EN.md](MOTO_APP_KNOWLEDGE_BASE_EN.md) (business),
   [KICKOFF_NOTES.md](KICKOFF_NOTES.md) (vision/ideas), `docs/DECISIONS.md` (create on first decision).

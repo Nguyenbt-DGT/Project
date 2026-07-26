@@ -3,8 +3,8 @@
 > **Status**: Draft for reconciliation · **Owner**: product-owner · **Author of record**: business-analyst
 > **Scope**: App-wide behavior that every feature depends on — authentication, first-launch
 > onboarding, and localization. Feature-specific rules live in the per-feature docs
-> (e.g., [HEALTH_REQ.md](HEALTH_REQ.md)).
-> **Related**: [FRAMEWORK_RULES.md](FRAMEWORK_RULES.md) (Rule 4.3 Auth, Rule 3.x Expo).
+> (e.g., [HEALTH_REQ.md](../health/HEALTH_REQ.md)).
+> **Related**: [FRAMEWORK_RULES.md](../../FRAMEWORK_RULES.md) (Rule 4.3 Auth, Rule 3.x Expo).
 
 ---
 
@@ -56,7 +56,7 @@ The first time a user signs in, walk them through:
    - Bike **name** and **brand**.
    - **Current mileage** with unit (km / miles).
    - **Recently changed parts** — a checklist of the parts tracked in Service Reminders
-     ([HEALTH_REQ.md](HEALTH_REQ.md) §6). For each part the user checks and confirms, that part's
+     ([HEALTH_REQ.md](../health/HEALTH_REQ.md) §6). For each part the user checks and confirms, that part's
      reminder in the Health tab is **reset to 0** (last service = the entered current mileage).
 
 **Acceptance criteria**

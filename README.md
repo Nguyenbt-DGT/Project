@@ -51,14 +51,14 @@ design/       HTML design references (mockup + prototype) and reference images
 
 | Document | Purpose |
 |---|---|
-| [docs/moto-app-knowledge-base-en.md](docs/moto-app-knowledge-base-en.md) | **Business requirements** (the "KB") — what to build |
+| [docs/MOTO_APP_KNOWLEDGE_BASE_EN.md](docs/MOTO_APP_KNOWLEDGE_BASE_EN.md) | **Business requirements** (the "KB") — what to build |
 | [docs/FRAMEWORK_RULES.md](docs/FRAMEWORK_RULES.md) | **Binding technical rules** — how to build & test it |
 | [docs/GUIDELINE.md](docs/GUIDELINE.md) | Developer & AI-agent workflow guide — setup, day-to-day flow, hosted-deployment tutorial |
-| [docs/HEALTH_REQ.md](docs/HEALTH_REQ.md) | HEALTH_CHECK feature requirements (the Health tab) |
-| [docs/HOME_REQ.md](docs/HOME_REQ.md) | HOME feature requirements (the landing tab) |
-| [docs/GLOBAL_REQ.md](docs/GLOBAL_REQ.md) | Global requirements — auth, onboarding, units, language |
+| [docs/features/health/HEALTH_REQ.md](docs/features/health/HEALTH_REQ.md) | HEALTH_CHECK feature requirements (the Health tab) |
+| [docs/features/home/HOME_REQ.md](docs/features/home/HOME_REQ.md) | HOME feature requirements (the landing tab) |
+| [docs/features/global/GLOBAL_REQ.md](docs/features/global/GLOBAL_REQ.md) | Global requirements — auth, onboarding, units, language |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | Technical/product decision log (scope, resolved open questions) |
-| [docs/HEALTH_ACCEPTANCE.md](docs/HEALTH_ACCEPTANCE.md) | Given/When/Then acceptance criteria for the Health MVP |
+| [docs/features/health/HEALTH_ACCEPTANCE.md](docs/features/health/HEALTH_ACCEPTANCE.md) | Given/When/Then acceptance criteria for the Health MVP |
 | [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) | Known limitations & follow-ups |
 | [docs/KICKOFF_NOTES.md](docs/KICKOFF_NOTES.md) | Product vision & future ideas (not MVP scope) |
 
