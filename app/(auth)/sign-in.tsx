@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useLanguage } from '@/i18n';
+import { getAuthErrorMessage } from '@/lib/auth-errors';
 import { supabase } from '@/lib/supabase';
 import { COLORS, RADIUS, SPACING } from '@/theme';
 
@@ -28,7 +29,7 @@ export default function SignInRoute() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setIsSubmitting(false);
     if (error) {
-      setErrorMessage(error.message);
+      setErrorMessage(getAuthErrorMessage(error, language));
       return;
     }
     // index.tsx decides where to land (onboarding vs. Home) based on whether a vehicle exists.

@@ -542,6 +542,28 @@ product-owner, not blocking. Item 5's hosted-app move is documented but requires
 execute the account-creation steps in GUIDELINE.md §8 themselves (or with my help interactively,
 once they have the accounts).
 
+**Update (2026-07-23)**: Item 5's Supabase half is now **executed**, not just documented. User
+created a free Supabase project ("night-garage", ref `dyaftgwisnfingahkrhx`, ap-northeast-1),
+authenticated the CLI (`supabase login`), linked it (`supabase link --project-ref
+dyaftgwisnfingahkrhx`), and pushed all migrations (`supabase db push`). `.env` now points
+`EXPO_PUBLIC_SUPABASE_URL`/`EXPO_PUBLIC_SUPABASE_ANON_KEY` at the hosted project instead of the
+local stack; verified live via an unauthenticated REST call to `/rest/v1/vehicles`, which returned
+`200 []` — schema present, RLS correctly blocking anon reads. `supabase/seed.sql` was deliberately
+**not** run against it (Rule 4.7 — that's local-dev fixture data only; real users onboard normally).
+Local `supabase start` + `db reset` + the Vitest DB suite remain the dev/test loop (Rule 4.7 still
+governs testing); the hosted project is the always-on target for daily app use only. EAS
+Build/TestFlight (the other half of item 5, for a server-free *frontend*) remains undone by the
+user's own choice — they're continuing with `expo start`/Expo Go for now.
+
+**Incident during this update**: a Supabase **personal access token** (used to authenticate the CLI
+outside the keyring-based `login` flow, needed because `supabase db push` in this environment failed
+to read the keyring-stored session and required a token file instead) was briefly pasted into two
+places: `.env` (gitignored, never at risk of being committed) and `docs/HEALTH_ACCEPTANCE.md`
+(tracked, but caught and removed before ever being committed — confirmed via `git status`/`git log`
+that it never entered history). Both are cleaned up. Recommended the user rotate/revoke that PAT
+regardless, since a credential pasted into the wrong place more than once should be treated as
+non-pristine even when no actual leak to a shared/public location occurred.
+
 ---
 
 ## D-CI-NODE22 — CI requires Node 22+ (not 20)
@@ -904,3 +926,92 @@ regression) that this is a pre-existing environment condition, not caused by thi
 `expo export --platform web` all pass. Tracked as `KNOWN_ISSUES.md` KI-19.
 
 **Status**: Implemented and verified (except the pre-existing `test:db` environment flake above).
+
+---
+
+## D-AUTH-OTP-CODE — Email confirmation by 6-digit code, not magic link
+
+**Date**: 2026-07-23. Source: user hit `otp_expired`/`access_denied` at `localhost:3000` when
+tapping the confirmation link sent after registering on the hosted project.
+
+**Root cause (two compounding issues, either one alone would explain the symptom)**:
+1. `supabase.auth.signUp()` in `app/(auth)/sign-up.tsx` set no `emailRedirectTo`, so the
+   confirmation link falls back to the project's **Site URL** — the Supabase default for a fresh
+   project is `http://localhost:3000`, which is meaningless for a mobile app with no website to
+   land on.
+2. Independent of #1: email clients that prescan links for phishing/malware (Gmail notably) fetch
+   the confirmation URL automatically to scan it, which consumes the one-time token before the user
+   ever taps it — the human's tap then always sees `otp_expired`, regardless of Site URL config.
+
+**Decision**: switch signup confirmation from a magic link to a **6-digit code** the user types into
+the app (`supabase.auth.verifyOtp({ email, token, type: 'signup' })`, with
+`supabase.auth.resend({ type: 'signup', email })` for a fresh code). This sidesteps both root causes
+at once — no redirect URL is involved, and a numeric code can't be "clicked" by a prescanner.
+`app/(auth)/sign-up.tsx` now has a `form` → `verify` step after signup when no session comes back
+(meaning confirmation is required).
+
+**Required manual step (not code, not a migration)**: the hosted project's "Confirm signup" email
+template must be edited in the Supabase dashboard to include `{{ .Token }}` — Auth email templates
+are dashboard/project config, not something `supabase db push` touches. Documented with exact
+template text in `GUIDELINE.md` §8.4. Until that edit is made, the code-entry screen exists in the
+app but the email itself still won't contain a code to type.
+
+**Deferred, not fixed here**: `app/(auth)/sign-in.tsx` still shows Supabase's raw (English-only)
+error message if a user tries to log in before confirming their email (e.g. "Email not confirmed"),
+with no in-place "resend code" recovery path — they'd currently need to go back through the sign-up
+form's verify step. Minor UX gap, not the reported bug; flagged for a follow-up round rather than
+expanding this fix's scope.
+
+**Status**: Decided and implemented (`tsc`/`eslint` clean). Blocked on the user completing the one
+dashboard template edit — the app-side fix alone doesn't produce a usable code until that's done.
+
+---
+
+## D-SMTP-CONFIG — Custom SMTP misconfiguration caused signup 500s; auth-js error display fixed
+
+**Date**: 2026-07-23. Continuation of `D-AUTH-OTP-CODE`.
+
+**Findings**:
+1. **Supabase locks email-template editing behind custom SMTP** — the "Confirm signup" template's
+   Subject/Body fields are read-only on the built-in mailer ("Set up custom SMTP to edit templates"
+   banner), which is why the earlier template edit silently didn't apply. Not a bug on our side;
+   confirmed via the user's own dashboard screenshot.
+2. Once custom SMTP (Resend) was configured, **registration started returning HTTP 500** from
+   `/auth/v1/signup`. Root cause, from the user's SMTP settings screenshot: **two Resend
+   requirements were violated** — (a) SMTP **username must be the literal string `resend`** (the
+   user had their project name, `night-garage`, instead), and (b) the **sender email's domain must
+   be verified in Resend** (the user had `night-garage-no-reply@dev.com` — `dev.com` isn't a domain
+   they've verified). Either alone causes Resend to reject the SMTP session/send, which GoTrue
+   surfaces as a 500 on the whole signup call (email sending happens synchronously as part of
+   signup). Fix: username → `resend`, sender email → `onboarding@resend.dev` (Resend's
+   no-verification-needed shared test address).
+3. **Separately, a real client-side defect**: any 5xx response from Supabase Auth was displayed to
+   the user as a raw, unreadable dump of internal fetch `Response` object fields (`_bodyBlob`,
+   `blobId`, etc.) instead of a message. Traced to `@supabase/auth-js`'s own `handleError`
+   (`lib/fetch.js`): it treats every 5xx as a "retryable network error" and skips parsing the
+   response body, falling back to `JSON.stringify(rawResponse)` for the message — this is
+   `auth-js`'s behavior, not something introduced by this app's code. Fixed with a new
+   `src/lib/auth-errors.ts` → `getAuthErrorMessage(error, language)`: passes through genuinely
+   readable 4xx messages ("Invalid login credentials", etc.) unchanged, replaces any 5xx (or
+   statusless) error with a generic localized message. Wired into both `sign-up.tsx` and
+   `sign-in.tsx`. Unit-tested (`src/lib/auth-errors.test.ts`, 5 cases).
+
+**Status**: Decided and implemented (`tsc`/`eslint`/`jest` clean, 108 tests). Root-caused via the
+user's own dashboard screenshots rather than needing another access token — no credential handling
+this round.
+
+**Update (confirmed)**: SMTP delivery is fully working end-to-end — the confirmation email arrived
+with a code, resolving the earlier 500. Root cause of the residual send failure was, as suspected,
+Resend's `onboarding@resend.dev` restricting delivery to the account's own registered email;
+confirmed via web search rather than guessing (Resend docs don't spell this out explicitly in an
+easily citable single line, but the pattern matches standard sandbox-domain behavior across
+transactional-email providers). A verified custom domain remains necessary before other users
+(besides the account owner) can register — tracked as a follow-up, not yet done.
+
+**Follow-up bug found from the confirmation email itself**: the received code was **8 digits**
+(`52975430`), not the 6 originally assumed when building the verify-code UI — `TextInput
+maxLength={6}` was silently truncating any longer code, making verification impossible regardless of
+SMTP. Supabase's OTP length is per-project Auth config, not a fixed constant. Fixed in
+`app/(auth)/sign-up.tsx`: `maxLength` raised to a generous 12 (cap, not an exact-length assumption),
+placeholder/copy no longer claims a specific digit count, and the code-input styling loosened
+(smaller font/letter-spacing) so longer codes fit comfortably. `tsc`/`eslint`/`jest` clean.

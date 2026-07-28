@@ -178,6 +178,33 @@ Full rules in FRAMEWORK_RULES §6. In short:
   but native WebSocket not found" the moment a client is created (it initializes a realtime client
   even for plain REST/RPC calls). CI's `database` job and this prerequisite are both pinned to
   Node 22 — don't downgrade either without checking supabase-js's runtime requirements first.
+- **Testing on a phone from a cloud codespace hits two separate networking walls, not one.** A
+  physical phone is never on the same network as a cloud codespace, so neither LAN Expo Go
+  connection nor `127.0.0.1`-style local URLs ever work from it — regardless of how long you wait.
+  Two independent ports need to be reachable from the phone's network, and each fails differently:
+  - **Metro/JS bundle (port 8081)**: without it, Expo Go hangs on "Opening project..." /
+    "this is taking much longer than it should." Fix: make the port public — Codespaces' **Ports**
+    panel → right-click 8081 → Port Visibility → Public, or `gh codespace ports visibility
+    8081:public -c "$CODESPACE_NAME"`. (`expo start --tunnel` is the non-Codespaces-specific
+    alternative, at the cost of installing `@expo/ngrok`.)
+  - **Supabase API (port 54321, local stack only)**: without it, the JS bundle loads fine but any
+    Supabase call (login, queries) fails with `JSON Parse error: Unexpected end of input` — the
+    request hits GitHub's port-forwarding auth proxy instead of Kong, and gets back HTML/empty body
+    instead of JSON. Same fix, different port: make 54321 public too. **This exposes your local
+    Postgres/Auth/REST API to the public internet for as long as the codespace runs** (RLS still
+    applies, but it's a real tradeoff, not risk-free) — or sidestep it entirely by pointing `.env` at
+    a **hosted** Supabase project instead of the local stack (§8.1), which has no port-visibility
+    question at all since it's already public infrastructure with your project's own auth.
+- **A Supabase CLI quirk**: `supabase login` authenticates via the system keyring, but `supabase db
+  push` (specifically the "Initialising login role..." step) looks for a token *file*
+  (`~/.supabase/profile`) that `login` never creates in this environment — it fails with "Access
+  token not provided" even though `supabase link`/`projects list` work fine right after the same
+  login. Workaround: generate a Personal Access Token at
+  [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens),
+  `export SUPABASE_ACCESS_TOKEN=<token>` in the shell running `db push`, and **don't leave it sitting
+  in a file** (not `.env`, not any doc) longer than the one command needs it — treat it as
+  compromised and rotate it if it ever ends up pasted somewhere it shouldn't (see `DECISIONS.md`
+  `D-DEMO3`'s 2026-07-23 update for exactly this happening once).
 
 ---
 
@@ -249,16 +276,92 @@ you can send directly (no Play Store account required to just install and test i
 
 ### 8.3 What's still local right now
 
-As of this doc, the app is still running against the **local** Supabase stack + Expo Go tunnel from
-earlier sessions — §8.1/§8.2 above are the documented path, not yet executed, because both need
-your own Supabase/Expo/Apple accounts and payment details, which an AI agent cannot create or hold.
-See `DECISIONS.md` `D-DEMO3` for the full record and current status.
+**§8.1 (hosted Supabase) is done.** The app runs against the hosted `night-garage` project
+(`dyaftgwisnfingahkrhx.supabase.co`) — `.env` has its URL/anon key, all migrations are pushed, and
+it's confirmed live. Supabase itself is now always-on; no `supabase start`/Docker needed to use the
+app day to day. Local `supabase start` + `db reset` + `npm run test:db` remain how you develop and
+test (Rule 4.7 — tests never run against the hosted project), they're just no longer needed to
+*use* the app.
+
+**§8.2 (EAS Build/TestFlight) is not done** — by choice, not blocker. The frontend still runs via
+`expo start` + Expo Go, so you still start Metro each session (and, in a cloud codespace, still need
+port 8081 forwarded/public — see §7's Codespaces networking notes). If the remaining friction is
+Metro itself rather than Supabase, §8.2 is what removes it. See `DECISIONS.md` `D-DEMO3` for the
+full record, including a credential-handling incident from this update (a Supabase personal access
+token briefly touched two files; cleaned up, rotation recommended).
+
+### 8.4 Required one-time dashboard step: email confirmation by code, not link
+
+Once on a **hosted** project (§8.1), the "Confirm signup" email's link goes to the project's
+**Site URL**, which defaults to `http://localhost:3000` — meaningless for a mobile app, and the
+link is additionally prone to being silently consumed by email clients that prescan links for
+safety (Gmail in particular), which shows up as `otp_expired`/`access_denied` on first click even
+though the user never clicked it before. `app/(auth)/sign-up.tsx` is built around a **6-digit code**
+instead (`supabase.auth.verifyOtp({ email, token, type: 'signup' })`), which sidesteps both — but it
+only works once the hosted project's email template actually contains the code. This is a **dashboard
+config change, not something a migration or app code can set** — do this once per hosted project:
+
+1. Supabase dashboard → your project → **Authentication → Email Templates → Confirm signup**.
+   **The Subject/Body fields are read-only on Supabase's built-in mailer** — there's a banner
+   ("Set up custom SMTP to edit templates") and the fields are locked until step 0 below is done.
+2. Replace the body with something that includes `{{ .Token }}`, e.g.:
+   ```html
+   <h2>Confirm your signup</h2>
+   <p>Enter this code in the app to finish creating your account:</p>
+   <h1>{{ .Token }}</h1>
+   <p>This code expires shortly — request a new one from the app if it's expired.</p>
+   ```
+   (Dropping `{{ .ConfirmationURL }}` from the template entirely avoids the temptation to tap a link
+   that may already be dead from prescanning.)
+3. Save. No CLI/migration equivalent — this lives in Auth config, not the Postgres schema pushed by
+   `supabase db push`.
+
+Until this is done, new sign-ups will reach the "enter your code" screen but the email they receive
+will still only have the (broken) link, not a code to type.
+
+**Step 0 — custom SMTP is required first, and it's also required to unlock the template editor
+above (not just to lift the built-in mailer's rate limit).** Recommended: **Resend**, free tier,
+100 emails/day. Dashboard → **Project Settings → Auth → SMTP Settings**:
+
+| Field | Value |
+|---|---|
+| Host | `smtp.resend.com` |
+| Port | `465` |
+| Username | **`resend`** — literally that string, not your project/org name |
+| Password | your Resend API key (Resend dashboard → API Keys) |
+| Sender email | `onboarding@resend.dev` — Resend's shared test address, works with **no domain
+verification**. A custom domain (e.g. `you@yourdomain.com`) only works once verified via DNS in
+Resend; an unverified/unowned domain (`@dev.com`, `@yourapp.com` you don't actually control in
+Resend) gets **silently rejected by Resend**, and GoTrue surfaces that as a **500 on the whole
+`/auth/v1/signup` call** (email sending is synchronous with signup) — not an obviously
+email-related error. Same failure mode if Username isn't exactly `resend`. |
+
+If registration 500s right after setting up SMTP, re-check those two fields first before looking
+anywhere else.
+
+**Client-side note**: `@supabase/auth-js` displays any 5xx error as a raw dump of internal fetch
+`Response` fields (`_bodyBlob`, `blobId`, ...) instead of a message — it's the library's own
+behavior (skips body-parsing for 5xx, stringifies the raw Response), not a bug in this app. Both
+auth screens go through `src/lib/auth-errors.ts`'s `getAuthErrorMessage()`, which replaces that with
+a generic localized message and passes genuinely readable 4xx errors through unchanged.
+
+**Don't hardcode the OTP code's digit count.** It's per-project Auth config, not a universal
+constant — one hosted project here generated **8 digits**, not the 6 commonly assumed. The verify
+screen's `TextInput` must cap `maxLength` generously (e.g. 12) rather than to an exact expected
+length, or a longer code gets silently truncated and verification fails with no obvious cause.
+
+**`onboarding@resend.dev` only sends to the Resend account's own registered email**, not arbitrary
+recipients — expected before verifying a custom domain, not a bug. A real signup flow (recipients
+other than the developer) needs a verified domain in Resend (dashboard → Domains → Add Domain → add
+the DNS records it gives you). Fine to defer while it's just you testing; required before anyone
+else can register.
 
 ---
 
 ## 9. Document status
 
-- **Version**: 1.2 (2026-07-18) — added §8 (hosted Supabase + EAS/TestFlight iOS access) after
-  DEMO_FEEDBACK_003.
+- **Version**: 1.6 (2026-07-23) — §8.4 gained the required custom-SMTP step (Resend), the exact
+  `username: resend` / verified-sender gotchas that caused a signup 500, the auth-js raw-Response
+  error-display note, and the OTP-digit-count / `resend.dev` recipient-restriction gotchas.
 - Keep §7 alive: when you hit a non-obvious problem another agent will hit too, add the lesson here
   (workflow lessons) or in FRAMEWORK_RULES (binding rules) via PR.
